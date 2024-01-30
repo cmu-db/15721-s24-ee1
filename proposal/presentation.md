@@ -78,7 +78,7 @@ error[E0308]: mismatched types
 
 # Matches Are Exhaustive
 
-![bg right:25% 75%](../images/ferris_does_not_compile.svg)
+![bg right:25% 75%](./images/ferris_does_not_compile.svg)
 
 The `match` patterns must cover all possible values that the matched expression may take.
 
