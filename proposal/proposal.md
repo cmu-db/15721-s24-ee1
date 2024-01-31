@@ -101,7 +101,7 @@ The IO Service will retrieve the data (presumably by talking with the Catalog) f
 A potential `StorageClient` API in Rust that the IO service would expose:
 
 ```rust
-//! Right now we have this in a submodule `storage_client.rs`, but the IO service 
+//! Right now we have this in a submodule `storage_client.rs`, but the IO service
 //! team would probably create a crate and we could import it easily into our `Cargo.toml` file
 
 use anyhow::Result;
