@@ -9,9 +9,22 @@ paginate: true
 
 <br>
 
-`Authors: Connor, Kyle, Sarvesh`
+## **Authors: Connor, Kyle, Sarvesh**
 
 Vectorized push-based velox inspired execution engine
+
+---
+
+# Design Rationale
+
+Push vs Pull Based
+
+|Push| Pull|
+|----| ----|
+|Improves cache efficiency by removing control flow logic | Easier to implement |
+|Forking is efficient: You push a thing only once   |Operators like LIMIT make their producers aware of when to stop running (Headache for the optimizer)|
+|Parallelization is easier|Parallelization is harder|
+
 
 ---
 
@@ -19,9 +32,9 @@ Vectorized push-based velox inspired execution engine
 
 Finalize API with other teams:
 
-- I/O Service
-- Catalog
-- Scheduler
+* I/O Service
+* Catalog
+* Scheduler
 
 ---
 
@@ -103,17 +116,17 @@ Need to spill the data to local disk.
 
 # Step 3: Implement operators
 
-- TableScan
-- FilterProject
-- HashAggregation
-- HashProbe + HashBuild
-- MergeJoin
-- NestedLoopJoin
-- OrderBy
-- TopN
-- Limit
-- Values
-- More may be added as a stretch goal.
+* TableScan
+* FilterProject
+* HashAggregation
+* HashProbe + HashBuild
+* MergeJoin
+* NestedLoopJoin
+* OrderBy
+* TopN
+* Limit
+* Values
+* More may be added as a stretch goal.
 
 ---
 
@@ -123,30 +136,39 @@ Need to spill the data to local disk.
 
 ---
 
-# Our Design Rationale
+# Our Design Goals
 
-- Robust
-- Forward Compatibility
+* Robustnes
+* Forward Compatibility
+* Provide bare minimum statistics the optimizer needs
   ![bg right:50% 120%](./images/robustness.png)
+
+---
+
+# Testing
+* Unit tests for each operator
+* Timing each operator's performance to benchmark our code
 
 ---
 
 # For the sake of code quality...
 
-- Pair programming
-- Unit testing
+* Pair programming (all combinations: KC, KS, CS)
+* Unit testing for each operator
+* Integrated tests across mutliple operators
 
 ---
 
 # Stretch Goal
 
-- Integrating with a DBMS
-- Testing against TPC-H or TPC-H like workload
+* Integrating with a DBMS
+* Testing against TPC-H or TPC-H like workload
+* Add a lot of statistics and timers to each operator (for optimizer's sake)
 
 ---
 
 # List of rust crates we plan to use
 
-- `arrow` : for handling the Apache Arrow format
-- `tokio` : high performance async runtime
-- `rayon` : data parallelism crate
+* `arrow` : for handling the Apache Arrow format
+* `tokio` : high performance async runtime
+* `rayon` : data parallelism crate
