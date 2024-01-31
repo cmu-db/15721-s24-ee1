@@ -128,6 +128,12 @@ pub enum BlobData {
     Tuple(RecordId),
 }
 
+pub type SendableRecordBatchStream =
+    Pin<Box<dyn RecordBatchStream<Item =
+        Result<RecordBatch, DataFusionError>
+        > + Send
+    >>;
+
 impl StorageClient {
     /// Have some sort of way to create a `StorageClient` on our local node.
     pub fn new(_id: usize) -> Self {
@@ -147,7 +153,7 @@ impl StorageClient {
     pub async fn request_data(
         &self,
         _request: BlobData,
-    ) -> Result<Box<dyn Stream<Item = RecordBatch>>> {
+    ) -> SendableRecordBatchStream {
         todo!()
     }
 }
