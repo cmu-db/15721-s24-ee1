@@ -9,6 +9,8 @@ authors = ["Connor Tsui (cjtsui)", "Sarvesh Tandon (sarvesht)", "Kyle Booker (kb
 [dependencies]
 anyhow = "1"
 arrow = "50"
-tokio = "1"
+datafusion = "35"
+substrait = "0.24"
+tokio = { version = "1", features = ["full"] }
 tokio-stream = "0.1"
 rayon = "1"

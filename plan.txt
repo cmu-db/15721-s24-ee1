@@ -1,0 +1,50 @@
+https://docs.rs/tokio/latest/tokio/sync/mpsc/fn.channel.html
+
+https://docs.rs/substrait/latest/substrait/proto/rel/enum.RelType.html
+
+            Operator G
+                |
+                |
+            Channel C
+                |
+                |
+            Operator P -> waits for Op1, then builds hash table
+          /            \
+    Channel A         Channel B
+       /                  \
+      /                    \
+Operator 1              Operator 2
+
+Operator P pseudo:
+    listen on channel A, listen on channel B
+
+    when it has what it needs
+    spin up rayon threads
+    wait on rayon threads to finish
+    send on channel C
+
+Brain: 
+   takes in substrait
+   interprets it
+   and starts whipping tokio threads for each op, don't need to wait cuz tokio = amazing light weight
+   + make channels for all edges in the DAG
+
+
+- Note: Create the threads for each operator top down
+- data is then pushed up
+
+
+
+tokio: 10000 light-weight threads
+
+rayon: a few OS threads
+
+
+
+
+
+
+
+
+
+
