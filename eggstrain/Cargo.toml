@@ -2,7 +2,13 @@
 name = "eggstrain"
 version = "0.1.0"
 edition = "2021"
+authors = ["Connor Tsui (cjtsui)", "Sarvesh Tandon (sarvesht)", "Kyle Booker (kbooker)"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1"
+arrow = "50"
+tokio = "1"
+tokio-stream = "0.1"
+rayon = "1"
