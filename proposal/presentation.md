@@ -146,6 +146,16 @@ Need to spill the data to local disk.
 ---
 
 
+# Goals
+
+* 75%: First 7 operators working + integration with other components
+* 100%: All operators listed above working
+* 125%: TPC-H benchmark working
+
+
+---
+
+
 # Stretch Goal
 
 * Integrating with a DBMS
