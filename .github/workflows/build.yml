@@ -19,7 +19,7 @@ jobs:
                     rustup component add rustfmt &&
                     rustup component add clippy
             - name: Install Protobuf
-              run: apt-get install protobuf-compiler
+              run: apt-get install -y protobuf-compiler
             - name: Install cargo-llvm-cov
               uses: taiki-e/install-action@cargo-llvm-cov
             - name: Format check
