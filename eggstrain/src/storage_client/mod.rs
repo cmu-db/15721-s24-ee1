@@ -3,10 +3,9 @@
 
 use datafusion::execution::SendableRecordBatchStream;
 
-use std::sync::Arc;
 use datafusion::common::arrow::array::{Int32Array, RecordBatch};
 use datafusion::common::arrow::datatypes::{DataType, Field, Schema};
-
+use std::sync::Arc;
 
 // Placeholder types to let this compile
 type ColumnId = String;
@@ -44,10 +43,7 @@ impl StorageClient {
     ///
     /// Note that we will likely re-export the `SendableRecordBatchRecord` from DataFusion
     /// and use that as the return type instead
-    pub async fn request_data(
-        &self,
-        _request: BlobData,
-    ) -> SendableRecordBatchStream {
+    pub async fn request_data(&self, _request: BlobData) -> SendableRecordBatchStream {
         todo!()
     }
 
@@ -58,13 +54,8 @@ impl StorageClient {
     /// https://docs.rs/datafusion/latest/datafusion/common/arrow/array/struct.RecordBatch.html
     pub async fn request_synchronous_data() -> RecordBatch {
         let id_array = Int32Array::from(vec![1, 2, 3, 4, 5]);
-        let schema = Schema::new(vec![
-            Field::new("id", DataType::Int32, false)
-        ]);
+        let schema = Schema::new(vec![Field::new("id", DataType::Int32, false)]);
 
-        RecordBatch::try_new(
-            Arc::new(schema),
-            vec![Arc::new(id_array)]
-        ).unwrap()
+        RecordBatch::try_new(Arc::new(schema), vec![Arc::new(id_array)]).unwrap()
     }
 }

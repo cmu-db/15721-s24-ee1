@@ -1,29 +1,4 @@
+pub mod operators;
 
-
-
-
-
-pub trait Operator {
-    async fn execute(data: RecordBatch)
-}
-
-
-
-pub async fn execute()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#[cfg(test)]
+mod tests;

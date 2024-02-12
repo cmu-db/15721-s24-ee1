@@ -2,13 +2,18 @@
 name = "eggstrain"
 version = "0.1.0"
 edition = "2021"
-authors = ["Connor Tsui (cjtsui)", "Sarvesh Tandon (sarvesht)", "Kyle Booker (kbooker)"]
+authors = [
+    "Connor Tsui (cjtsui)",
+    "Sarvesh Tandon (sarvesht)",
+    "Kyle Booker (kbooker)",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1"
 arrow = "50"
+async-trait = "0.1"
 datafusion = "35"
 substrait = "0.24"
 tokio = { version = "1", features = ["full"] }
