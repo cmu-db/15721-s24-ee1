@@ -4,6 +4,7 @@ use tokio::sync::broadcast::{Receiver, Sender};
 pub mod forward_toy;
 pub mod order_by;
 pub mod project;
+pub mod table_scan;
 
 #[async_trait]
 pub(crate) trait UnaryOperator: Send {
