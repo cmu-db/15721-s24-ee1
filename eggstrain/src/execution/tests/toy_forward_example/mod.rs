@@ -1,8 +1,9 @@
 pub mod bad_dag;
+pub mod forward_toy;
 
-use crate::execution::operators::forward_toy::Forward;
-use crate::execution::operators::*;
 use bad_dag::*;
+use crate::execution::operators::*;
+use forward_toy::Forward;
 use std::{collections::VecDeque, sync::Arc};
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 
