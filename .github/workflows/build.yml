@@ -12,12 +12,14 @@ jobs:
                 working-directory: ./eggstrain
         steps:
             - uses: actions/checkout@v3
-            - name: Install Toolchain
+            - name: Install Rust Toolchain
               run: rustup toolchain uninstall stable &&
                     rustup toolchain install stable &&
                     rustup default stable &&
                     rustup component add rustfmt &&
                     rustup component add clippy
+            - name: Install Protobuf
+              run: apt-get install protobuf-compiler
             - name: Install cargo-llvm-cov
               uses: taiki-e/install-action@cargo-llvm-cov
             - name: Format check
