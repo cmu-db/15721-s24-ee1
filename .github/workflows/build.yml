@@ -9,7 +9,7 @@ jobs:
     continue-on-error: false
     defaults:
       run:
-        working-directory: ./name_tbd
+        working-directory: ./eggstrain
     steps:
       - uses: actions/checkout@v3
       - name: Install Toolchain
