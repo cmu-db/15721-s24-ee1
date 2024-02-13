@@ -1,0 +1,400 @@
+{
+  "extensions": [
+    {
+      "extensionFunction": {
+        "functionAnchor": 1,
+        "name": "equal"
+      }
+    },
+    {
+      "extensionFunction": {
+        "functionAnchor": 2,
+        "name": "is_not_null"
+      }
+    },
+    {
+      "extensionFunction": {
+        "functionAnchor": 3,
+        "name": "and"
+      }
+    },
+    {
+      "extensionFunction": {
+        "functionAnchor": 4,
+        "name": "lt"
+      }
+    }
+  ],
+  "relations": [
+    {
+      "root": {
+        "input": {
+          "project": {
+            "input": {
+              "project": {
+                "input": {
+                  "join": {
+                    "left": {
+                      "read": {
+                        "baseSchema": {
+                          "names": [
+                            "author_id",
+                            "name",
+                            "nationality"
+                          ],
+                          "struct": {
+                            "types": [
+                              {
+                                "i32": {
+                                  "nullability": "NULLABILITY_REQUIRED"
+                                }
+                              },
+                              {
+                                "varchar": {
+                                  "length": 19,
+                                  "nullability": "NULLABILITY_REQUIRED"
+                                }
+                              },
+                              {
+                                "varchar": {
+                                  "length": 7,
+                                  "nullability": "NULLABILITY_NULLABLE"
+                                }
+                              }
+                            ],
+                            "nullability": "NULLABILITY_REQUIRED"
+                          }
+                        },
+                        "filter": {
+                          "scalarFunction": {
+                            "functionReference": 3,
+                            "outputType": {
+                              "bool": {
+                                "nullability": "NULLABILITY_NULLABLE"
+                              }
+                            },
+                            "arguments": [
+                              {
+                                "value": {
+                                  "scalarFunction": {
+                                    "functionReference": 1,
+                                    "outputType": {
+                                      "varchar": {
+                                        "length": 1,
+                                        "nullability": "NULLABILITY_NULLABLE"
+                                      }
+                                    },
+                                    "arguments": [
+                                      {
+                                        "value": {
+                                          "selection": {
+                                            "directReference": {
+                                              "structField": {
+                                                "field": 2
+                                              }
+                                            },
+                                            "rootReference": {}
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "value": {
+                                          "literal": {
+                                            "string": "England"
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "value": {
+                                  "scalarFunction": {
+                                    "functionReference": 2,
+                                    "outputType": {
+                                      "varchar": {
+                                        "length": 1,
+                                        "nullability": "NULLABILITY_NULLABLE"
+                                      }
+                                    },
+                                    "arguments": [
+                                      {
+                                        "value": {
+                                          "selection": {
+                                            "directReference": {
+                                              "structField": {
+                                                "field": 2
+                                              }
+                                            },
+                                            "rootReference": {}
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        "projection": {
+                          "select": {
+                            "structItems": [
+                              {},
+                              {
+                                "field": 1
+                              }
+                            ]
+                          },
+                          "maintainSingularStruct": true
+                        },
+                        "namedTable": {
+                          "names": [
+                            "Authors"
+                          ]
+                        }
+                      }
+                    },
+                    "right": {
+                      "read": {
+                        "baseSchema": {
+                          "names": [
+                            "book_id",
+                            "title",
+                            "author_id",
+                            "publication_year"
+                          ],
+                          "struct": {
+                            "types": [
+                              {
+                                "i32": {
+                                  "nullability": "NULLABILITY_REQUIRED"
+                                }
+                              },
+                              {
+                                "varchar": {
+                                  "length": 20,
+                                  "nullability": "NULLABILITY_REQUIRED"
+                                }
+                              },
+                              {
+                                "i32": {
+                                  "nullability": "NULLABILITY_REQUIRED"
+                                }
+                              },
+                              {
+                                "i32": {
+                                  "nullability": "NULLABILITY_NULLABLE"
+                                }
+                              }
+                            ],
+                            "nullability": "NULLABILITY_REQUIRED"
+                          }
+                        },
+                        "filter": {
+                          "scalarFunction": {
+                            "functionReference": 3,
+                            "outputType": {
+                              "bool": {
+                                "nullability": "NULLABILITY_NULLABLE"
+                              }
+                            },
+                            "arguments": [
+                              {
+                                "value": {
+                                  "scalarFunction": {
+                                    "functionReference": 4,
+                                    "outputType": {
+                                      "i32": {
+                                        "nullability": "NULLABILITY_NULLABLE"
+                                      }
+                                    },
+                                    "arguments": [
+                                      {
+                                        "value": {
+                                          "selection": {
+                                            "directReference": {
+                                              "structField": {
+                                                "field": 3
+                                              }
+                                            },
+                                            "rootReference": {}
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "value": {
+                                          "literal": {
+                                            "i32": 1850
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "value": {
+                                  "scalarFunction": {
+                                    "functionReference": 2,
+                                    "outputType": {
+                                      "i32": {
+                                        "nullability": "NULLABILITY_NULLABLE"
+                                      }
+                                    },
+                                    "arguments": [
+                                      {
+                                        "value": {
+                                          "selection": {
+                                            "directReference": {
+                                              "structField": {
+                                                "field": 3
+                                              }
+                                            },
+                                            "rootReference": {}
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        "projection": {
+                          "select": {
+                            "structItems": [
+                              {
+                                "field": 2
+                              },
+                              {
+                                "field": 1
+                              }
+                            ]
+                          },
+                          "maintainSingularStruct": true
+                        },
+                        "namedTable": {
+                          "names": [
+                            "Books"
+                          ]
+                        }
+                      }
+                    },
+                    "expression": {
+                      "scalarFunction": {
+                        "functionReference": 1,
+                        "outputType": {
+                          "bool": {
+                            "nullability": "NULLABILITY_NULLABLE"
+                          }
+                        },
+                        "arguments": [
+                          {
+                            "value": {
+                              "selection": {
+                                "directReference": {
+                                  "structField": {}
+                                },
+                                "rootReference": {}
+                              }
+                            }
+                          },
+                          {
+                            "value": {
+                              "selection": {
+                                "directReference": {
+                                  "structField": {
+                                    "field": 2
+                                  }
+                                },
+                                "rootReference": {}
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "type": "JOIN_TYPE_INNER"
+                  }
+                },
+                "expressions": [
+                  {
+                    "selection": {
+                      "directReference": {
+                        "structField": {}
+                      },
+                      "rootReference": {}
+                    }
+                  },
+                  {
+                    "selection": {
+                      "directReference": {
+                        "structField": {
+                          "field": 1
+                        }
+                      },
+                      "rootReference": {}
+                    }
+                  },
+                  {
+                    "selection": {
+                      "directReference": {
+                        "structField": {
+                          "field": 2
+                        }
+                      },
+                      "rootReference": {}
+                    }
+                  },
+                  {
+                    "selection": {
+                      "directReference": {
+                        "structField": {
+                          "field": 3
+                        }
+                      },
+                      "rootReference": {}
+                    }
+                  }
+                ]
+              }
+            },
+            "expressions": [
+              {
+                "selection": {
+                  "directReference": {
+                    "structField": {
+                      "field": 1
+                    }
+                  },
+                  "rootReference": {}
+                }
+              },
+              {
+                "selection": {
+                  "directReference": {
+                    "structField": {
+                      "field": 3
+                    }
+                  },
+                  "rootReference": {}
+                }
+              }
+            ]
+          }
+        },
+        "names": [
+          "author_name",
+          "book_title"
+        ]
+      }
+    }
+  ],
+  "version": {
+    "minorNumber": 24,
+    "producer": "DuckDB"
+  }
+}
