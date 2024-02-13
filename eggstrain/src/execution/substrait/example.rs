@@ -6,7 +6,7 @@ use substrait::proto::ReadRel;
 
 /// We want the plan to look like this:
 ///
-/// ```
+/// ```text
 /// |-+ Aggregate({sales = sum(quantity_price)}, group_by=(product_name, product_id))
 ///  |-+ InnerJoin(on=orders.product_id = products.product_id)
 ///   |- ReadTable(orders)
