@@ -14,8 +14,6 @@ authors = [
 anyhow = "1"
 arrow = "50"
 async-trait = "0.1"
-datafusion = "35"
 substrait = "0.24"
 tokio = { version = "1", features = ["full"] }
-tokio-stream = "0.1"
 rayon = "1"
