@@ -1,49 +1,50 @@
-use super::*;
-use arrow::{
-    array::RecordBatch,
-    datatypes::{DataType, Field, Fields, Schema},
-};
+use super::{Operator, UnaryOperator};
+use arrow::{datatypes::SchemaRef, record_batch::RecordBatch};
 use async_trait::async_trait;
+use datafusion::physical_plan::PhysicalExpr;
+use datafusion::physical_plan::{projection::ProjectionExec, ExecutionPlan};
+use datafusion_common::Result;
 use std::sync::Arc;
+use tokio::sync::broadcast;
 use tokio::sync::broadcast::error::RecvError;
 
 pub struct Project {
-    pub schema: Arc<Schema>,
-    /// TODO:
-    /// https://docs.rs/substrait/latest/substrait/proto/struct.ProjectRel.html
-    /// Need to make these expressions rather than a bunch of columns
-    pub expressions: Vec<usize>,
+    pub output_expr: Vec<(Arc<dyn PhysicalExpr>, String)>,
+    pub input_schema: SchemaRef, // TODO
+    pub output_schema: SchemaRef,
+    pub children: Vec<Arc<dyn ExecutionPlan>>,
 }
 
 impl Project {
-    pub fn new(_schema: Arc<Schema>, expressions: Vec<usize>) -> Self {
-        // TODO placeholder
-        let field_a = Field::new("a", DataType::Int64, false);
-        let schema = Arc::new(Schema::new(vec![field_a]));
-        let res = Self {
-            schema,
-            expressions,
-        };
-
-        let fields = res.schema.fields();
-
-        debug_assert!(res.is_valid_projection(fields));
-        res
+    pub fn new(input_schema: SchemaRef, projection_plan: &ProjectionExec) -> Self {
+        Self {
+            output_expr: Vec::from(projection_plan.expr()),
+            input_schema,
+            output_schema: projection_plan.schema(),
+            children: projection_plan.children(),
+        }
     }
 
-    fn is_valid_projection(&self, fields: &Fields) -> bool {
-        self.expressions.iter().all(|&col| col < fields.len())
+    fn apply_projection(&self, rb: RecordBatch) -> Result<RecordBatch> {
+        assert_eq!(rb.schema(), self.input_schema);
+
+        let num_rows = rb.num_rows();
+
+        let mut columns = Vec::with_capacity(self.output_expr.len());
+
+        for (expr, name) in &self.output_expr {
+            let col_val = expr.evaluate(&rb).expect("expr.evaluate() fails");
+            let column = col_val.into_array(num_rows)?;
+            columns.push((name, column, expr.nullable(&self.input_schema)?));
+        }
+
+        Ok(RecordBatch::try_from_iter_with_nullable(columns)?)
     }
+}
 
-    fn project_record_batch(&self, batch: RecordBatch) -> RecordBatch {
-        let schema = batch.schema();
-
-        let projected = self
-            .expressions
-            .iter()
-            .map(|&i| (schema.field(i).name(), batch.column(i).clone()));
-
-        RecordBatch::try_from_iter(projected).expect("Unable to create the RecordBatch")
+impl Operator for Project {
+    fn children(&self) -> Vec<Arc<dyn ExecutionPlan>> {
+        self.children.clone()
     }
 }
 
@@ -52,19 +53,24 @@ impl UnaryOperator for Project {
     type In = RecordBatch;
     type Out = RecordBatch;
 
-    fn into_unary(self) -> Box<dyn UnaryOperator<In = Self::In, Out = Self::Out>> {
-        Box::new(self)
+    fn into_unary(self) -> Arc<dyn UnaryOperator<In = Self::In, Out = Self::Out>> {
+        Arc::new(self)
     }
 
-    async fn execute(&self, mut rx: Receiver<Self::In>, tx: Sender<Self::Out>) {
-        // For now assume that each record batch has the same type
-
+    async fn execute(
+        &self,
+        mut rx: broadcast::Receiver<Self::In>,
+        tx: broadcast::Sender<Self::Out>,
+    ) {
         loop {
             match rx.recv().await {
                 Ok(batch) => {
-                    debug_assert!(batch.schema() == self.schema, "RecordBatch {:?} does not have the correct schema. Schema is {:?}, supposed to be {:?}", batch, batch.schema(), self.schema);
-                    tx.send(self.project_record_batch(batch))
-                        .expect("Sending failed");
+                    let projected_batch = self
+                        .apply_projection(batch)
+                        .expect("Unable to apply projection");
+
+                    tx.send(projected_batch)
+                        .expect("Unable to send the projected batch");
                 }
                 Err(e) => match e {
                     RecvError::Closed => break,

@@ -1,4 +1,2 @@
 pub mod operators;
-
-#[cfg(test)]
-mod tests;
+pub mod query_dag;
