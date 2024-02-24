@@ -40,7 +40,6 @@ fn extract_df_node(plan: Arc<dyn ExecutionPlan>) -> Result<EggstrainOperator> {
     let id = root.type_id();
 
     if id == TypeId::of::<ProjectionExec>() {
-        eprintln!("Creating projection node!");
         let projection_plan = root
             .downcast_ref::<ProjectionExec>()
             .expect("Unable to downcast_ref to ProjectionExec");
