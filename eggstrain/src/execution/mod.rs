@@ -1,5 +1,5 @@
 pub mod operators;
-pub mod substrait;
+pub mod query_dag;
 
 #[cfg(test)]
 mod tests;
