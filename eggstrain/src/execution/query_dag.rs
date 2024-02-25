@@ -20,7 +20,7 @@ use tokio::sync::broadcast;
 ///
 /// TODO docs
 #[derive(Clone)]
-pub(crate) enum EggstrainOperator {
+enum EggstrainOperator {
     Project(Arc<dyn UnaryOperator<In = RecordBatch, Out = RecordBatch>>),
     Filter(Arc<dyn UnaryOperator<In = RecordBatch, Out = RecordBatch>>),
 
@@ -121,7 +121,7 @@ fn datafusion_execute(plan: Arc<dyn ExecutionPlan>, tx: broadcast::Sender<Record
                     continue;
                 }
 
-                tx.send(batch.clone())
+                tx.send(batch)
                     .expect("Unable to send rb to project node");
             }
         }

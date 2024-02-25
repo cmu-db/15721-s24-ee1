@@ -9,20 +9,18 @@ use tokio::sync::broadcast;
 use tokio::sync::broadcast::error::RecvError;
 
 /// TODO docs
-pub struct Project {
-    pub output_expr: Vec<(Arc<dyn PhysicalExpr>, String)>,
-    pub input_schema: SchemaRef, // TODO
-    pub output_schema: SchemaRef,
-    pub children: Vec<Arc<dyn ExecutionPlan>>,
+pub(crate) struct Project {
+    output_expr: Vec<(Arc<dyn PhysicalExpr>, String)>,
+    input_schema: SchemaRef, // TODO
+    children: Vec<Arc<dyn ExecutionPlan>>,
 }
 
 /// TODO docs
 impl Project {
-    pub fn new(input_schema: SchemaRef, projection_plan: &ProjectionExec) -> Self {
+    pub(crate) fn new(input_schema: SchemaRef, projection_plan: &ProjectionExec) -> Self {
         Self {
             output_expr: Vec::from(projection_plan.expr()),
             input_schema,
-            output_schema: projection_plan.schema(),
             children: projection_plan.children(),
         }
     }
