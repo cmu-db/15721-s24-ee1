@@ -62,7 +62,10 @@ impl UnaryOperator for Filter {
                     let filtered_batch = self
                         .batch_filter(batch)
                         .expect("Filter::batch_filter() fails");
-                    tx.send(filtered_batch).expect("tx.send() fails");
+
+                    if filtered_batch.num_rows() > 0 {
+                        tx.send(filtered_batch).expect("tx.send() fails");
+                    }
                 }
                 Err(e) => match e {
                     RecvError::Closed => break,

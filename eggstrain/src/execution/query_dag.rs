@@ -106,6 +106,7 @@ fn df_execute_node(plan: Arc<dyn ExecutionPlan>, tx: broadcast::Sender<RecordBat
 }
 
 pub fn build_query_dag(plan: Arc<dyn ExecutionPlan>) -> Result<broadcast::Receiver<RecordBatch>> {
+    // A tuple containing a plan node and a sender into that node
     let mut queue = VecDeque::new();
 
     // Final output is going to be sent to root_rx
@@ -117,11 +118,17 @@ pub fn build_query_dag(plan: Arc<dyn ExecutionPlan>) -> Result<broadcast::Receiv
     queue.push_back((root, root_tx));
 
     while let Some((node, tx)) = queue.pop_front() {
-        for child in node.children() {
-            let (child_tx, child_rx) = broadcast::channel::<RecordBatch>(BATCH_SIZE);
+        let node = node.clone();
 
-            if let Ok(child_node) = extract_df_node(child.clone()) {
-                match child_node.clone() {
+        match node.children().len() {
+            0 => {
+                todo!();
+            }
+            1 => {
+                let (child_tx, child_rx) = broadcast::channel::<RecordBatch>(BATCH_SIZE);
+                let child_plan = node.children()[0].clone();
+
+                match node.clone() {
                     EggstrainOperator::Project(eggnode) | EggstrainOperator::Filter(eggnode) => {
                         let tx = tx.clone();
                         tokio::spawn(async move {
@@ -129,11 +136,43 @@ pub fn build_query_dag(plan: Arc<dyn ExecutionPlan>) -> Result<broadcast::Receiv
                         });
                     }
                 };
-                queue.push_back((child_node, child_tx));
-            } else {
-                df_execute_node(child.clone(), tx.clone());
+
+                match extract_df_node(child_plan.clone()) {
+                    Ok(val) => {
+                        queue.push_back((val, child_tx));
+                    }
+                    Err(_) => {
+                        df_execute_node(child_plan, child_tx);
+                    }
+                }
+            }
+            2 => {
+                todo!();
+            }
+            _ => {
+                return Err(DataFusionError::NotImplemented(
+                    "More than 2 children not implemented".to_string(),
+                ));
             }
         }
+
+        // for child in node.children() {
+        //     let (child_tx, child_rx) = broadcast::channel::<RecordBatch>(BATCH_SIZE);
+
+        //     if let Ok(child_node) = extract_df_node(child.clone()) {
+        //         match child_node.clone() {
+        //             EggstrainOperator::Project(eggnode) | EggstrainOperator::Filter(eggnode) => {
+        //                 let tx = tx.clone();
+        //                 tokio::spawn(async move {
+        //                     eggnode.execute(child_rx, tx).await;
+        //                 });
+        //             }
+        //         };
+        //         queue.push_back((child_node, child_tx));
+        //     } else {
+        //         df_execute_node(child.clone(), tx.clone());
+        //     }
+        // }
     }
 
     Ok(root_rx)

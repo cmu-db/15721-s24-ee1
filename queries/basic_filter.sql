@@ -3,5 +3,5 @@ SELECT
 FROM
     orders
 WHERE
-    orders.o_totalprice < 300.00
+    orders.o_totalprice < 850.00
 ;
