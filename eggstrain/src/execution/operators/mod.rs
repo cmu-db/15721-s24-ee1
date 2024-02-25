@@ -5,6 +5,7 @@ use tokio::sync::broadcast::{Receiver, Sender};
 
 pub mod filter;
 pub mod project;
+pub mod sort;
 
 /// Defines shared behavior for all operators
 ///
