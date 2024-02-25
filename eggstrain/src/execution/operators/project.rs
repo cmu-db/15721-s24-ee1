@@ -8,6 +8,7 @@ use std::sync::Arc;
 use tokio::sync::broadcast;
 use tokio::sync::broadcast::error::RecvError;
 
+/// TODO docs
 pub struct Project {
     pub output_expr: Vec<(Arc<dyn PhysicalExpr>, String)>,
     pub input_schema: SchemaRef, // TODO
@@ -15,6 +16,7 @@ pub struct Project {
     pub children: Vec<Arc<dyn ExecutionPlan>>,
 }
 
+/// TODO docs
 impl Project {
     pub fn new(input_schema: SchemaRef, projection_plan: &ProjectionExec) -> Self {
         Self {
@@ -42,12 +44,14 @@ impl Project {
     }
 }
 
+/// TODO docs
 impl Operator for Project {
     fn children(&self) -> Vec<Arc<dyn ExecutionPlan>> {
         self.children.clone()
     }
 }
 
+/// TODO docs
 #[async_trait]
 impl UnaryOperator for Project {
     type In = RecordBatch;

@@ -6,10 +6,16 @@ use tokio::sync::broadcast::{Receiver, Sender};
 pub mod filter;
 pub mod project;
 
+/// Defines shared behavior for all operators
+///
+/// TODO docs
 pub trait Operator {
     fn children(&self) -> Vec<Arc<dyn ExecutionPlan>>;
 }
 
+/// Defines shared behavior for operators with a single logical input
+///
+/// TODO docs
 #[async_trait]
 pub(crate) trait UnaryOperator: Operator + Send + Sync {
     type In;
@@ -20,6 +26,9 @@ pub(crate) trait UnaryOperator: Operator + Send + Sync {
     async fn execute(&self, rx: Receiver<Self::In>, tx: Sender<Self::Out>);
 }
 
+/// Defines shared behavior for operators with a two logical inputs (like joins)
+///
+/// TODO docs
 #[async_trait]
 pub(crate) trait BinaryOperator: Operator + Send + Sync {
     type InLeft;

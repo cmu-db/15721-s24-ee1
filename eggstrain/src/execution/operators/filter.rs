@@ -10,11 +10,13 @@ use std::sync::Arc;
 use tokio::sync::broadcast;
 use tokio::sync::broadcast::error::RecvError;
 
+/// TODO docs
 pub struct Filter {
     pub predicate: Arc<dyn PhysicalExpr>,
     pub children: Vec<Arc<dyn ExecutionPlan>>,
 }
 
+/// TODO docs
 impl Filter {
     pub fn new(predicate: Arc<dyn PhysicalExpr>, children: Vec<Arc<dyn ExecutionPlan>>) -> Self {
         Self {
@@ -23,7 +25,8 @@ impl Filter {
         }
     }
 
-    /// https://docs.rs/datafusion-physical-plan/36.0.0/src/datafusion_physical_plan/filter.rs.html#307
+    /// Taken from DataFusion's `FilterExec`
+    /// [code](https://docs.rs/datafusion-physical-plan/36.0.0/src/datafusion_physical_plan/filter.rs.html#307)
     pub fn batch_filter(&self, batch: RecordBatch) -> Result<RecordBatch> {
         self.predicate
             .evaluate(&batch)
@@ -36,12 +39,14 @@ impl Filter {
     }
 }
 
+/// TODO docs
 impl Operator for Filter {
     fn children(&self) -> Vec<Arc<dyn ExecutionPlan>> {
         self.children.clone()
     }
 }
 
+/// TODO docs
 #[async_trait]
 impl UnaryOperator for Filter {
     type In = RecordBatch;
