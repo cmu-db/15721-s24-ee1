@@ -11,14 +11,14 @@ use tokio::sync::broadcast;
 use tokio::sync::broadcast::error::RecvError;
 
 /// TODO docs
-pub struct Filter {
-    pub predicate: Arc<dyn PhysicalExpr>,
-    pub children: Vec<Arc<dyn ExecutionPlan>>,
+pub(crate) struct Filter {
+    predicate: Arc<dyn PhysicalExpr>,
+    children: Vec<Arc<dyn ExecutionPlan>>,
 }
 
 /// TODO docs
 impl Filter {
-    pub fn new(predicate: Arc<dyn PhysicalExpr>, children: Vec<Arc<dyn ExecutionPlan>>) -> Self {
+    pub(crate) fn new(predicate: Arc<dyn PhysicalExpr>, children: Vec<Arc<dyn ExecutionPlan>>) -> Self {
         Self {
             predicate,
             children,
@@ -27,7 +27,7 @@ impl Filter {
 
     /// Taken from DataFusion's `FilterExec`
     /// [code](https://docs.rs/datafusion-physical-plan/36.0.0/src/datafusion_physical_plan/filter.rs.html#307)
-    pub fn batch_filter(&self, batch: RecordBatch) -> Result<RecordBatch> {
+    fn batch_filter(&self, batch: RecordBatch) -> Result<RecordBatch> {
         self.predicate
             .evaluate(&batch)
             .and_then(|v| v.into_array(batch.num_rows()))
