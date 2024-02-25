@@ -4,8 +4,8 @@ use std::sync::Arc;
 use tokio::sync::broadcast::{Receiver, Sender};
 
 pub mod filter;
-pub mod project;
 pub mod hash_join;
+pub mod project;
 
 /// Defines shared behavior for all operators
 ///
