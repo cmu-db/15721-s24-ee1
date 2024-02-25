@@ -4,7 +4,7 @@ use std::collections::HashMap; // TODO replace with a raw table
 
 pub struct RecordTable {
     /// Maps a Hash value to a `RecordIndex` into the `RecordBuffer`
-    inner: HashMap<usize, Vec<RecordIndex>>,
+    inner: HashMap<u64, Vec<RecordIndex>>,
     buffer: RecordBuffer,
 }
 
@@ -23,7 +23,7 @@ impl RecordTable {
         }
     }
 
-    pub fn insert_batch(&mut self, batch: RecordBatch, hashes: Vec<usize>) {
+    pub fn insert_batch(&mut self, batch: RecordBatch, hashes: Vec<u64>) {
         assert_eq!(
             batch.num_rows(),
             hashes.len(),
@@ -44,7 +44,7 @@ impl RecordTable {
         }
     }
 
-    pub fn get_records(&self, hash: usize) -> Option<&Vec<RecordIndex>> {
+    pub fn get_records(&self, hash: u64) -> Option<&Vec<RecordIndex>> {
         self.inner.get(&hash)
     }
 
