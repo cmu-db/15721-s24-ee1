@@ -121,8 +121,7 @@ fn datafusion_execute(plan: Arc<dyn ExecutionPlan>, tx: broadcast::Sender<Record
                     continue;
                 }
 
-                tx.send(batch)
-                    .expect("Unable to send rb to project node");
+                tx.send(batch).expect("Unable to send rb to project node");
             }
         }
     });

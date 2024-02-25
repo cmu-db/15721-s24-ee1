@@ -18,7 +18,10 @@ pub(crate) struct Filter {
 
 /// TODO docs
 impl Filter {
-    pub(crate) fn new(predicate: Arc<dyn PhysicalExpr>, children: Vec<Arc<dyn ExecutionPlan>>) -> Self {
+    pub(crate) fn new(
+        predicate: Arc<dyn PhysicalExpr>,
+        children: Vec<Arc<dyn ExecutionPlan>>,
+    ) -> Self {
         Self {
             predicate,
             children,
