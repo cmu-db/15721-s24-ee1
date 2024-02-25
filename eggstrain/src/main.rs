@@ -1,18 +1,20 @@
 use arrow::util::pretty;
 use datafusion_common::Result;
-use eggstrain::{run, tpch_dataframe};
+use eggstrain::{run, tpch_ctx};
+use std::io;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let tpch = tpch_dataframe().await?;
+    // Create a SessionContext with TPCH base tables
+    let ctx = tpch_ctx().await?;
 
-    let physical_plan = tpch.clone().create_physical_plan().await?;
+    // Create a DataFrame with the input query
+    let query = io::read_to_string(io::stdin())?;
+    let sql = ctx.sql(&query).await?;
 
-    println!("{:#?}", physical_plan.clone());
-
-    // let physical_plan = physical_plan.children()[0].clone();
-
-    let results = run(physical_plan).await;
+    // Run our execution engine on the physical plan
+    let df_physical_plan = sql.clone().create_physical_plan().await?;
+    let results = run(df_physical_plan).await;
 
     results.into_iter().for_each(|batch| {
         let pretty_results = pretty::pretty_format_batches(&[batch]).unwrap().to_string();
