@@ -1,6 +1,8 @@
+use super::operators::filter::Filter;
 use super::operators::project::Project;
 use super::operators::UnaryOperator;
 use arrow::record_batch::RecordBatch;
+use datafusion::physical_plan::filter::FilterExec;
 use datafusion::physical_plan::{projection::ProjectionExec, ExecutionPlan, Partitioning};
 use datafusion_common::{DataFusionError, Result};
 use futures::stream::StreamExt;
@@ -15,10 +17,13 @@ const BATCH_SIZE: usize = 1024;
 #[derive(Clone)]
 pub(crate) enum EggstrainOperator {
     Project(Arc<dyn UnaryOperator<In = RecordBatch, Out = RecordBatch>>),
-    // Filter(Arc<dyn UnaryNode>),
+    Filter(Arc<dyn UnaryOperator<In = RecordBatch, Out = RecordBatch>>),
     // Sort(Arc<dyn UnaryNode>),
+
     // Aggregate(Arc<dyn UnaryNode>),
+
     // TableScan(Arc<dyn UnaryNode>),
+
     // HashJoin(Arc<dyn BinaryNode>),
 }
 
@@ -26,6 +31,7 @@ impl EggstrainOperator {
     fn children(&self) -> Vec<Arc<dyn ExecutionPlan>> {
         match self {
             Self::Project(x) => x.children(),
+            Self::Filter(x) => x.children(),
         }
     }
 }
@@ -49,8 +55,16 @@ fn extract_df_node(plan: Arc<dyn ExecutionPlan>) -> Result<EggstrainOperator> {
         let node = Project::new(child_schema, projection_plan).into_unary();
 
         Ok(EggstrainOperator::Project(node))
-    // } else if id == TypeId::of::<FilterExec>() {
-    //     todo!();
+    } else if id == TypeId::of::<FilterExec>() {
+        let filter_plan = root
+            .downcast_ref::<FilterExec>()
+            .expect("Unable to downcast_ref to FilterExec");
+
+        let node =
+            Filter::new(filter_plan.predicate().clone(), filter_plan.children()).into_unary();
+
+        Ok(EggstrainOperator::Filter(node))
+
     // } else if id == TypeId::of::<HashJoinExec>() {
     //     todo!();
     // } else if id == TypeId::of::<SortExec>() {
@@ -108,10 +122,10 @@ pub fn build_query_dag(plan: Arc<dyn ExecutionPlan>) -> Result<broadcast::Receiv
 
             if let Ok(child_node) = extract_df_node(child.clone()) {
                 match child_node.clone() {
-                    EggstrainOperator::Project(project) => {
+                    EggstrainOperator::Project(eggnode) | EggstrainOperator::Filter(eggnode) => {
                         let tx = tx.clone();
                         tokio::spawn(async move {
-                            project.execute(child_rx, tx).await;
+                            eggnode.execute(child_rx, tx).await;
                         });
                     }
                 };

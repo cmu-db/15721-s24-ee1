@@ -8,6 +8,10 @@ async fn main() -> Result<()> {
 
     let physical_plan = tpch.clone().create_physical_plan().await?;
 
+    println!("{:#?}", physical_plan.clone());
+
+    // let physical_plan = physical_plan.children()[0].clone();
+
     let results = run(physical_plan).await;
 
     results.into_iter().for_each(|batch| {
