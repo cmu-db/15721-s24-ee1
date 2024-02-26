@@ -1,5 +1,6 @@
 use super::operators::filter::Filter;
 use super::operators::project::Project;
+use super::operators::sort::Sort;
 use super::operators::{BinaryOperator, UnaryOperator};
 use crate::BATCH_SIZE;
 use arrow::record_batch::RecordBatch;
@@ -23,10 +24,9 @@ use tokio::sync::broadcast;
 enum EggstrainOperator {
     Project(Arc<dyn UnaryOperator<In = RecordBatch, Out = RecordBatch>>),
     Filter(Arc<dyn UnaryOperator<In = RecordBatch, Out = RecordBatch>>),
+    Sort(Arc<dyn UnaryOperator<In = RecordBatch, Out = RecordBatch>>),
 
     // TODO remove `dead_code` once implemented
-    #[allow(dead_code)]
-    Sort(Arc<dyn UnaryOperator<In = RecordBatch, Out = RecordBatch>>),
     #[allow(dead_code)]
     Aggregate(Arc<dyn UnaryOperator<In = RecordBatch, Out = RecordBatch>>),
     #[allow(dead_code)]
@@ -43,6 +43,7 @@ impl EggstrainOperator {
         match self {
             Self::Project(x) => x.children(),
             Self::Filter(x) => x.children(),
+            Self::Sort(x) => x.children(),
             _ => unimplemented!(),
         }
     }
@@ -85,7 +86,15 @@ fn parse_execution_plan_root(plan: &Arc<dyn ExecutionPlan>) -> Result<EggstrainO
     } else if id == TypeId::of::<HashJoinExec>() {
         unimplemented!("HashJoin not implemented");
     } else if id == TypeId::of::<SortExec>() {
-        unimplemented!("Sort not implemented");
+        let Some(sort_plan) = root.downcast_ref::<SortExec>() else {
+            return Err(DataFusionError::NotImplemented(
+                "Unable to downcast DataFusion ExecutionPlan to ProjectionExec".to_string(),
+            ));
+        };
+
+        let node = Sort::new(sort_plan);
+
+        Ok(EggstrainOperator::Sort(node.into_unary()))
     } else if id == TypeId::of::<AggregateExec>() {
         unimplemented!("Aggregate not implemented");
     } else {
@@ -121,8 +130,7 @@ fn datafusion_execute(plan: Arc<dyn ExecutionPlan>, tx: broadcast::Sender<Record
                     continue;
                 }
 
-                tx.send(batch)
-                    .expect("Unable to send rb to project node");
+                tx.send(batch).expect("Unable to send rb to project node");
             }
         }
     });
@@ -141,7 +149,9 @@ fn setup_unary_operator(
 
     // Create the operator's tokio task
     match node.clone() {
-        EggstrainOperator::Project(eggnode) | EggstrainOperator::Filter(eggnode) => {
+        EggstrainOperator::Project(eggnode)
+        | EggstrainOperator::Filter(eggnode)
+        | EggstrainOperator::Sort(eggnode) => {
             let tx = tx.clone();
             tokio::spawn(async move {
                 eggnode.execute(child_rx, tx).await;
