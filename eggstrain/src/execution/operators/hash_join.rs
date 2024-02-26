@@ -84,7 +84,7 @@ impl HashJoin {
                 Ok(batch) => {
                     // TODO gather N batches and use rayon to insert all at once
                     let hashes = self.hash_batch::<true>(&batch)?;
-                    record_table.insert_batch(batch, hashes);
+                    record_table.insert_batch(batch, hashes)?;
                 }
                 Err(e) => match e {
                     RecvError::Closed => break,
@@ -113,29 +113,39 @@ impl HashJoin {
     ) -> Result<()> {
         let hashes = self.hash_batch::<false>(&right_batch)?;
 
-        let left_column_count = self.left_schema.fields().size();
-        let right_column_count = self.right_schema.fields().size();
-        let output_columns = left_column_count + right_column_count - self.equate_on.len();
+        // let left_column_count = self.left_schema.fields().size();
+        // let right_column_count = self.right_schema.fields().size();
+        // let output_columns = left_column_count + right_column_count - self.equate_on.len();
 
-        for (right_row, &hash) in hashes.iter().enumerate() {
-            // Construct a RecordBatch for each tuple that might get joined with tuples in the hash table
-            let mut out_columns: Vec<(String, ArrayRef)> = Vec::with_capacity(output_columns);
+        let right_rows = table.buffer.record_batch_to_rows(right_batch)?;
 
+        for (row, &hash) in hashes.iter().enumerate() {
             // For each of these hashes, check if it is in the table
-            let Some(records) = table.get_records(hash) else {
+            let Some(records) = table.get_record_indices(hash) else {
                 return Ok(());
             };
             assert!(!records.is_empty());
 
+            // TODO
+            todo!("create a new RowConverter with the joined schema");
+
             // There are records associated with this hash value, so we need to emit things
             for &record in records {
-                let (left_batch, left_row) = table.get(record).unwrap();
+                let left_tuple = table.buffer.get(record).unwrap();
+                let right_tuple = right_rows.row(row);
 
-                // Left tuple is in `left_batch` at `left_row` offset
-                // Right tuple is in `right_batch` at `right_row` offset
+                todo!("Join the two tuples in some way, then append to a `Rows`")
             }
 
-            let joined_batch = RecordBatch::try_from_iter(out_columns)?;
+            let out_columns: Vec<ArrayRef> = todo!(
+                "Convert the `Rows` back into a `RecordBatch` with `RowConverter::convert_rows`"
+            );
+
+            todo!("Figure out names for each column");
+
+            let out_columns_iter = out_columns.into_iter().map(|col| ("name", col));
+
+            let joined_batch = RecordBatch::try_from_iter(out_columns_iter)?;
 
             tx.send(joined_batch)
                 .expect("Unable to send the projected batch");

@@ -1,11 +1,13 @@
 use super::record_buffer::{RecordBuffer, RecordIndex};
+use arrow::row::RowConverter;
 use arrow::{datatypes::SchemaRef, record_batch::RecordBatch};
+use datafusion_common::Result;
 use std::collections::HashMap; // TODO replace with a raw table
 
 pub struct RecordTable {
     /// Maps a Hash value to a `RecordIndex` into the `RecordBuffer`
     inner: HashMap<u64, Vec<RecordIndex>>,
-    buffer: RecordBuffer,
+    pub(crate) buffer: RecordBuffer,
 }
 
 impl RecordTable {
@@ -23,7 +25,11 @@ impl RecordTable {
         }
     }
 
-    pub fn insert_batch(&mut self, batch: RecordBatch, hashes: Vec<u64>) {
+    pub fn converter(&self) -> &RowConverter {
+        self.buffer.converter()
+    }
+
+    pub fn insert_batch(&mut self, batch: RecordBatch, hashes: Vec<u64>) -> Result<()> {
         assert_eq!(
             batch.num_rows(),
             hashes.len(),
@@ -31,24 +37,20 @@ impl RecordTable {
         );
 
         // Points to the location of the base of the record batch
-        let base_record_id = self.buffer.insert(batch);
+        let base_record_id = self.buffer.insert(batch)?;
 
         for (row, &hash) in hashes.iter().enumerate() {
-            // Given the row, we can create a record id for a specific tuple by updating the row
-            // from the base_record_id
-            let mut record_id = base_record_id;
-            record_id.update_row(row as u32);
-
             // Insert the record into the hashtable bucket
-            self.inner.entry(hash).or_default().push(record_id)
+            self.inner
+                .entry(hash)
+                .or_default()
+                .push(base_record_id.with_row(row as u32))
         }
+
+        Ok(())
     }
 
-    pub fn get_records(&self, hash: u64) -> Option<&Vec<RecordIndex>> {
+    pub fn get_record_indices(&self, hash: u64) -> Option<&Vec<RecordIndex>> {
         self.inner.get(&hash)
-    }
-
-    pub fn get(&self, index: RecordIndex) -> Option<(&RecordBatch, u32)> {
-        self.buffer.get(index)
     }
 }
