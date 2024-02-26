@@ -41,7 +41,25 @@ impl UnaryOperator for Aggregte {
     ) {
         let mut batches = vec![];
         loop {
-            todo!();
+            match rx.recv().await {
+                Ok(batch) => {
+                    batches.push(batch);
+                }
+                Err(e) => match e {
+                    RecvError::Closed => break,
+                    RecvError::Lagged(_) => todo!(),
+                },
+            }
+        }
+
+        let merged_batch = concat_batches(&self.schema, &batches);
+        match merged_batch {
+            Ok(merged_batch) => {
+                todo!("Implement");
+            }
+            Error => {
+                todo!("Could not concat the batches");
+            }
         }
         todo!();
     }
