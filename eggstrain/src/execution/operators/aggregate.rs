@@ -27,5 +27,22 @@ impl Operator for Aggregate {
 /// TODO docs
 #[async_trait]
 impl UnaryOperator for Aggregte {
-    todo!();
+    type In = RecordBatch;
+    type Out = RecordBatch;
+
+    fn into_unary(self) -> Arc<dyn UnaryOperator<In = Self::In, Out = Self::Out>> {
+        todo!();
+    }
+
+    async fn execute(
+        &self,
+        rx: broadcast::Receiver<Self::In>,
+        tx: broadcast::Sender<Self::Out>,
+    ) {
+        let mut batches = vec![];
+        loop {
+            todo!();
+        }
+        todo!();
+    }
 }
