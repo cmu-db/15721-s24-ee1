@@ -5,7 +5,7 @@ class: invert # Remove this line for light mode
 paginate: true
 ---
 
-# Execution Engine: KCS
+# Execution Engine: Eggstrain
 
 <br>
 
@@ -105,9 +105,10 @@ Need to spill the data to local disk.
 # Step 3: Implement operators
 
 * TableScan
-* FilterProject
-* HashAggregation
-* HashProbe + HashBuild
+* Filter (Completed)
+* Projection (Completed)
+* HashAggregation (In-Progress)
+* HashProbe + HashBuild (In-Progress)
 * MergeJoin
 * NestedLoopJoin
 * OrderBy
