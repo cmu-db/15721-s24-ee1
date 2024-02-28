@@ -94,7 +94,7 @@ Finalize API with other teams:
 
 ![bg right:50% 80%](./images/bufferpool.png)
 
-Need to spill the data to local disk.
+Need to spill the data to local disk. This will be done after the first operators are implemented.
 
 * Can potentially rip out the [`memory_pool`](https://docs.rs/datafusion/latest/datafusion/execution/memory_pool/index.html)
 
