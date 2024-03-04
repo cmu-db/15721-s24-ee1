@@ -151,7 +151,7 @@ Here is a diagram of the `Sort` operator, which _is_ a pipeline breaker (as it n
 ```
 
 
-`Sort` will continuously poll its child task by calling `rx.recv()` on the input channel, until it returns a `RecvError::Closed`. All `RecordBatch`es are stored in some temporary buffer, either completely in memory, or with some contents spilled to temporary files on disk. See the [async I/O](#asynchronous-io-and-disk-manager) section for more details.
+`Sort` will continuously poll its child task by calling `rx.recv()` on the input channel, until it returns a `RecvError::Closed`. All `RecordBatch`es are stored in some temporary buffer, either completely in memory, or with some contents spilled to temporary files on disk. See the [async I/O](#asynchronous-io-and-buffer-pool-manager) section for more details.
 
 Once all data has been buffered, the `Sort` operator can begin the sorting phase. Instead of computing the computationally heavy sort algorithm in the `tokio` task, `Sort` will instead spawn a `rayon`-managed OS thread to offload the computational workload to a more "heavyweight" worker. Since `tokio` is a completely userspace thread library, this is incredibly important, since work done by a `Sort` operator within a `tokio` task would cause other `tokio` tasks to block on the `sort` computation. By instead sending the data to a synchronous OS thread, other lightweight tasks do not need to block on the `sort` computation, and the CPU running those threads can choose to run something else.
 
@@ -159,10 +159,15 @@ This is only possible via the `oneshot::channel`, which provides a synchronous m
 
 Once the `rx.await` call returns with the sorted data, `Sort` can send data up to the next operator in fixed-sized batches.
 
+<br>
+<br>
+<br>
+
+# In Progress Sections
+
+All of these sections are incomplete, but give some insight into our plans for the future.
 
 ## Asynchronous I/O and Buffer Pool Manager
-
-TODO: This section is in progress.
 
 Since `eggstrain` is so tightly coupled with an asynchronous runtime, it makes sense to use that to our benefit. Typically, we have to wait for disk reads and writes to finish before we can get access to a memory page. In synchronous land, there is nothing that we can do but yield while the OS runs a system call. The OS is allowed to context switch while this disk I/O is happening, meaning the read/write might take a "long" time to return.
 
@@ -180,9 +185,3 @@ The `ExecutionPlan` that `eggstrain` receives as input has nodes corresponding t
 Once `eggstrain` parses the plan, it will figure out what data it requires. From there, it will make a high-level request for data it needs from the IO Service (e.g. logical columns from a table).
 
 TODO something about `TableScan`, need to talk more with the I/O teams.
-
----
-
-## Other Sections
-
-TODO
