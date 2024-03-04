@@ -1,3 +1,5 @@
+#![doc = include_str!("../../README.md")]
+
 use arrow::record_batch::RecordBatch;
 use datafusion::physical_plan::ExecutionPlan;
 use datafusion::prelude::*;
