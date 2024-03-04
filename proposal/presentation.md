@@ -5,7 +5,7 @@ class: invert # Remove this line for light mode
 paginate: true
 ---
 
-# Execution Engine: KCS
+# Execution Engine: Eggstrain
 
 <br>
 
@@ -94,7 +94,7 @@ Finalize API with other teams:
 
 ![bg right:50% 80%](./images/bufferpool.png)
 
-Need to spill the data to local disk.
+Need to spill the data to local disk. This will be done after the first operators are implemented.
 
 * Can potentially rip out the [`memory_pool`](https://docs.rs/datafusion/latest/datafusion/execution/memory_pool/index.html)
 
@@ -105,9 +105,10 @@ Need to spill the data to local disk.
 # Step 3: Implement operators
 
 * TableScan
-* FilterProject
-* HashAggregation
-* HashProbe + HashBuild
+* Filter (Completed)
+* Projection (Completed)
+* HashAggregation (In-Progress)
+* HashProbe + HashBuild (In-Progress)
 * MergeJoin
 * NestedLoopJoin
 * OrderBy
