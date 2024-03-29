@@ -3,6 +3,7 @@ use datafusion::physical_plan::ExecutionPlan;
 use std::sync::Arc;
 use tokio::sync::broadcast::{Receiver, Sender};
 
+pub mod aggregate;
 pub mod filter;
 pub mod project;
 pub mod sort;
