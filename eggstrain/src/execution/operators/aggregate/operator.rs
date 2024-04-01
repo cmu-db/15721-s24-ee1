@@ -3,8 +3,9 @@
 use crate::BATCH_SIZE;
 
 use crate::execution::operators::{Operator, UnaryOperator};
-use arrow::array::ArrayRef;
+use arrow::array::{ArrayRef, AsArray};
 use arrow::compute::concat_batches;
+use arrow::compute::kernels::aggregate;
 use arrow::{datatypes::SchemaRef, record_batch::RecordBatch};
 use async_trait::async_trait;
 use datafusion::logical_expr::EmitTo;
@@ -13,6 +14,7 @@ use datafusion::physical_expr::{LexOrdering, LexRequirement, PhysicalSortExpr};
 use datafusion::physical_plan::aggregates::{AggregateExec, PhysicalGroupBy};
 use datafusion::physical_plan::ExecutionPlan;
 use datafusion::physical_plan::{AggregateExpr, InputOrderMode, PhysicalExpr};
+use std::io::SeekFrom;
 // use datafusion_common::Result;
 use std::sync::Arc;
 use tokio::sync::broadcast;
@@ -22,38 +24,6 @@ use tokio::sync::broadcast::error::RecvError;
 use std::vec;
 
 use super::*;
-
-
-// use crate::aggregates::group_values::{new_group_values, GroupValues};
-// use crate::aggregates::order::GroupOrderingFull;
-// use crate::aggregates::{
-//     evaluate_group_by, evaluate_many, evaluate_optional, group_schema, AggregateMode,
-//     PhysicalGroupBy,
-// };
-// use crate::common::IPCWriter;
-// use crate::metrics::{BaselineMetrics, RecordOutput};
-// use crate::sorts::sort::{read_spill_as_stream, sort_batch};
-// use crate::sorts::streaming_merge;
-// use crate::stream::RecordBatchStreamAdapter;
-// use crate::{aggregates, ExecutionPlan, PhysicalExpr, BATCH_SIZE};
-// use crate::{RecordBatchStream, SendableRecordBatchStream};
-
-// use arrow::array::*;
-// use arrow::{datatypes::SchemaRef, record_batch::RecordBatch};
-// use arrow_schema::SortOptions;
-// use datafusion_common::{DataFusionError, Result};
-// use datafusion_execution::disk_manager::RefCountedTempFile;
-// use datafusion_execution::memory_pool::proxy::VecAllocExt;
-// use datafusion_execution::memory_pool::{MemoryConsumer, MemoryReservation};
-// use datafusion_execution::runtime_env::RuntimeEnv;
-// use datafusion_execution::TaskContext;
-// use datafusion_expr::{EmitTo, GroupsAccumulator};
-// use datafusion_physical_expr::expressions::Column;
-// use datafusion_physical_expr::{AggregateExpr, GroupsAccumulatorAdapter, PhysicalSortExpr};
-
-// use futures::ready;
-// use futures::stream::{Stream, StreamExt};
-// use log::debug;
 
 /// TODO docs
 pub(crate) struct Aggregate {
@@ -112,7 +82,10 @@ impl Operator for Aggregate {
 
 impl Aggregate {
     fn aggregate_sync(
-        self: &Arc<Aggregate>,
+        aggr_expr: Vec<Arc<dyn AggregateExpr>>,
+        group_by: PhysicalGroupBy,
+        filter_expr: Vec<Option<Arc<dyn PhysicalExpr>>>,
+        output_schema: SchemaRef,
         merged_batch: RecordBatch,
         tx: broadcast::Sender<RecordBatch>,
     ) {
@@ -121,33 +94,66 @@ impl Aggregate {
         //  tx.send(stream.poll())
 
         // Evaluate the grouping expressions
-        let group_by_values = evaluate_group_by(&self.group_by, &merged_batch).unwrap();
+        let group_by_values = evaluate_group_by(&group_by, &merged_batch).unwrap();
+
+        let aggr_expr_ref = &aggr_expr;
+        let aggregate_arguments: Vec<Vec<Arc<dyn PhysicalExpr>>> = aggr_expr_ref
+            .iter()
+            .map(|agg| {
+                let mut result = agg.expressions();
+                // Append ordering requirements to expressions' results. This
+                // way order sensitive aggregators can satisfy requirement
+                // themselves.
+                if let Some(ordering_req) = agg.order_bys() {
+                    result.extend(ordering_req.iter().map(|item| item.expr.clone()));
+                }
+                result
+            })
+            .collect();
 
         // Evaluate the aggregation expressions.
-        let input_values = evaluate_many(&self.aggregate_arguments, &merged_batch).unwrap();
+        let input_values = evaluate_many(&aggregate_arguments, &merged_batch).unwrap();
 
         // Evaluate the filter expressions, if any, against the inputs
-        let filter_values = evaluate_optional(&self.filter_expressions, &merged_batch).unwrap();
+        let filter_values = evaluate_optional(&filter_expr, &merged_batch).unwrap();
+
+        //TODO: maybe this should be input schema not output schema
+        let group_schema = group_schema(
+            &Arc::clone(&output_schema),
+            group_by.clone().expr().len(),
+        );
+
+        let mut group_values_struct = new_group_values(group_schema).unwrap();
+
+        let mut current_group_indices = Default::default();
+
+        let mut accumulators: Vec<_> = aggr_expr
+            .clone()
+            .iter()
+            .map(create_group_accumulator)
+            .collect::<Result<_, _>>()
+            .unwrap();
 
         for group_values in &group_by_values {
             // calculate the group indices for each input row
-            let starting_num_groups = self.group_values.len();
-            self.group_values
-                .intern(group_values, &mut self.current_group_indices)
+            let starting_num_groups = group_values_struct.len();
+            group_values_struct
+                .intern(group_values, &mut current_group_indices)
                 .unwrap();
-            let group_indices = &self.current_group_indices;
+            let group_indices = &current_group_indices;
 
-            // Update ordering information if necessary
-            let total_num_groups = self.group_values.len();
-            if total_num_groups > starting_num_groups {
-                self.group_ordering
-                    .new_groups(group_values, group_indices, total_num_groups)
-                    .unwrap();
-            }
+            let total_num_groups = group_values_struct.len();
+
+            // TODO: I don't think we need to maintain what groups are ordered since it a single stage aggregation
+            // // Update ordering information if necessary
+            // if total_num_groups > starting_num_groups {
+            //     self.group_ordering
+            //         .new_groups(group_values, group_indices, total_num_groups)
+            //         .unwrap();
+            // }
 
             // Gather the inputs to call the actual accumulator
-            let t = self
-                .accumulators
+            let t = accumulators
                 .iter_mut()
                 .zip(input_values.iter())
                 .zip(filter_values.iter());
@@ -161,22 +167,21 @@ impl Aggregate {
             }
         }
 
-        let schema = self.schema();
-        if self.group_values.is_empty() {
+        let schema = output_schema.clone();
+        if group_values_struct.is_empty() {
             tx.send(RecordBatch::new_empty(schema));
             return;
         }
 
-        let mut output = self.group_values.emit(EmitTo::All).unwrap();
+        let mut output = group_values_struct.emit(EmitTo::All).unwrap();
 
         // Next output each aggregate value
-        for acc in self.accumulators.iter_mut() {
+        for acc in accumulators.iter_mut() {
             output.push(acc.evaluate(EmitTo::All).unwrap())
         }
 
         // emit reduces the memory usage. Ignore Err from update_memory_reservation. Even if it is
         // over the target memory size after emission, we can emit again rather than returning Err.
-        let _ = self.update_memory_reservation();
         let output_batch = RecordBatch::try_new(schema, output).unwrap();
 
         let mut current = 0;
@@ -224,6 +229,13 @@ impl UnaryOperator for Aggregate {
         let merged_batch = concat_batches(&self.input_schema, &batches).unwrap();
         let limit_size = self.limit_size;
 
-        rayon::spawn(|| Aggregate::aggregate_sync(Arc::new(&self), merged_batch, tx));
+
+        let aggregate_expressions = self.aggr_expr.clone();
+        let group_by = self.group_by.clone();
+        let filter_expr = self.filter_expr.clone();
+        let output_schema = self.output_schema.clone();
+
+        //TODO: maybe this *self is a problem
+        rayon::spawn(|| Aggregate::aggregate_sync(aggregate_expressions, group_by, filter_expr, output_schema, merged_batch, tx));
     }
 }

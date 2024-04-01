@@ -11,12 +11,17 @@ authors = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ahash = { version = "0.8", default-features = false, features = [
+    "runtime-rng",
+] }
 anyhow = "1"
-arrow = { version = "50", default-features = false }
+arrow = { version = "50", default-features = true }
 async-trait = "0.1"
 datafusion = { version = "36", default-features = false }
 datafusion-common = { version = "36", default-features = false }
 futures = "0.3"
+half = { version = "2.1", default-features = false }
+hashbrown = { version = "0.14", features = ["raw"] }
 serde_json = { version = "1", default-features = false }
 tokio = { version = "1", default-features = false, features = [
     "rt",
@@ -24,3 +29,8 @@ tokio = { version = "1", default-features = false, features = [
     "macros",
 ] }
 rayon = "1"
+arrow-array = "50.0.0"
+arrow-schema = "50.0.0"
+datafusion-expr = "36.0.0"
+datafusion-execution = "36.0.0"
+arrow-buffer = "50.0.0"

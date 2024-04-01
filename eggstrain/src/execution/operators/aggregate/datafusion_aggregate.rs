@@ -1,7 +1,14 @@
-use arrow::array::{ArrayRef, RecordBatch};
+use arrow::array::{downcast_primitive, ArrayRef, RecordBatch};
+use arrow::datatypes::SchemaRef;
+use arrow_schema::Schema;
 use datafusion::common::Result;
+use datafusion::physical_expr::GroupsAccumulatorAdapter;
+use datafusion::physical_plan::AggregateExpr;
 use datafusion::physical_plan::{aggregates::PhysicalGroupBy, PhysicalExpr};
+use datafusion_expr::GroupsAccumulator;
 use std::sync::Arc;
+
+use super::GroupValues;
 
 /// Evaluates expressions against a record batch.
 pub(crate) fn evaluate(
@@ -89,4 +96,30 @@ pub(crate) fn evaluate_group_by(
                 .collect()
         })
         .collect())
+}
+
+pub(crate) fn group_schema(schema: &Schema, group_count: usize) -> SchemaRef {
+    let group_fields = schema.fields()[0..group_count].to_vec();
+    Arc::new(Schema::new(group_fields))
+}
+
+/// Create an accumulator for `agg_expr` -- a [`GroupsAccumulator`] if
+/// that is supported by the aggregate, or a
+/// [`GroupsAccumulatorAdapter`] if not.
+pub(crate) fn create_group_accumulator(
+    agg_expr: &Arc<dyn AggregateExpr>,
+) -> Result<Box<dyn GroupsAccumulator>> {
+    if agg_expr.groups_accumulator_supported() {
+        agg_expr.create_groups_accumulator()
+    } else {
+        // Note in the log when the slow path is used
+        //TODO: maybe let's not print here
+        println!(
+            "Creating GroupsAccumulatorAdapter for {}: {agg_expr:?}",
+            agg_expr.name()
+        );
+        let agg_expr_captured = agg_expr.clone();
+        let factory = move || agg_expr_captured.create_accumulator();
+        Ok(Box::new(GroupsAccumulatorAdapter::new(factory)))
+    }
 }
