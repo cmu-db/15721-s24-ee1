@@ -101,7 +101,7 @@ What if we could do I/O _without_ blocking? There exist a few ways to do this:
 
 This Buffer Pool Manager is going to be built with asynchronous I/O using `io_uring`.
 
-* Source: _What Modern NVMe Storage Can Do, And How To Exploit It... (2022)_
+* Source: _What Modern NVMe Storage Can Do, And How To Exploit It... (2023)_
 
 
 ---
@@ -112,12 +112,82 @@ This Buffer Pool Manager is going to be built with asynchronous I/O using `io_ur
 Asynchronous I/O really only works when the programs running on top of it implement _cooperative multitasking_.
 
 * At a high level, the kernel gets to decide what thread gets to run
-* Cooperative multitasking allows the program to decide
+* Cooperative multitasking allows the program to decide who gets to run
+* Context switching between tasks is a lightweight maneuver
+* If one task is waiting for I/O, we can cheaply switch to a different task!
 
 
 ---
 
 
+# Eggstrain
+
+The key thing here is that our Execution Engine `eggstrain` fully embraces asynchronous execution.
+
+* Rust has first-class support for asynchronous programs
+* Using `async` libraries is almost as simple as plug-and-play
+* The `tokio` crate is an easy runtime to get set up
+* We can easily create a buffer pool manager in the form of a Rust library crate
 
 
+---
 
+
+# Goals
+
+The goal of this system is to _fully exploit parallelism_.
+
+* NVMe drives have gotten really, really fast
+* Blocking I/O simply cannot match the full throughput of an NVMe drive
+* They are _completely_ bottle-necked by today's software
+* If we can fully exploit parallelism in software _and_ hardware, we can get close to matching the speed of in-memory systems, while using persistent storage
+
+
+---
+
+
+# Proposed Design
+
+The next slide has a proposed design for a fully asynchronous buffer pool manager. The full (somewhat incomplete) writeup can be found [here](https://github.com/Connortsui20/async-bpm).
+
+* Heavily inspired by LeanStore
+    * Eliminates the global page table and uses tagged pointers to data
+* Even more inspired by this paper:
+    * _What Modern NVMe Storage Can Do, And How To Exploit It: High-Performance I/O for High-Performance Storage Engines (2023)_
+        * Gabriel Haas and Viktor Leis
+* The goal is to _eliminate as many sources of global contention as possible_
+
+
+---
+
+
+![bg 100%](images/bpm_design.png)
+
+
+---
+
+
+# Some Issues
+
+* There is a scheduler-per-thread, but no scheduler assigning tasks to specific workers (so it does not work with a multithreaded asynchronous runtime)
+* The proposed design does not have a backend stage to fully synchronize I/O
+* Eviction is done naively by a single worker thread
+    * Deadlocks!!!
+* Will probably switch to polling a list of free frames that gets populated by foreground tasks
+
+
+---
+
+
+# Future Work
+
+* This will definitely not be done by the end of this semester
+* Which means our execution engine is also not going to be "complete"
+* Our contribution is the beginning of an implementation of an asynchronous Buffer Pool Manager in Rust
+    * That can theoretically be plugged into any asynchronous execution engine like `eggstrain` or even DataFusion
+
+
+---
+
+
+# **Thank you!**
