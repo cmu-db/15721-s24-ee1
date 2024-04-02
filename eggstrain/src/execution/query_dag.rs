@@ -1,3 +1,4 @@
+use super::operators::aggregate::operator::Aggregate;
 use super::operators::filter::Filter;
 use super::operators::project::Project;
 use super::operators::sort::Sort;
@@ -25,10 +26,9 @@ enum EggstrainOperator {
     Project(Arc<dyn UnaryOperator<In = RecordBatch, Out = RecordBatch>>),
     Filter(Arc<dyn UnaryOperator<In = RecordBatch, Out = RecordBatch>>),
     Sort(Arc<dyn UnaryOperator<In = RecordBatch, Out = RecordBatch>>),
+    Aggregate(Arc<dyn UnaryOperator<In = RecordBatch, Out = RecordBatch>>),
 
     // TODO remove `dead_code` once implemented
-    #[allow(dead_code)]
-    Aggregate(Arc<dyn UnaryOperator<In = RecordBatch, Out = RecordBatch>>),
     #[allow(dead_code)]
     TableScan(Arc<dyn UnaryOperator<In = RecordBatch, Out = RecordBatch>>),
     #[allow(dead_code)]
@@ -44,6 +44,7 @@ impl EggstrainOperator {
             Self::Project(x) => x.children(),
             Self::Filter(x) => x.children(),
             Self::Sort(x) => x.children(),
+            Self::Aggregate(x) => x.children(),
             _ => unimplemented!(),
         }
     }
@@ -88,7 +89,7 @@ fn parse_execution_plan_root(plan: &Arc<dyn ExecutionPlan>) -> Result<EggstrainO
     } else if id == TypeId::of::<SortExec>() {
         let Some(sort_plan) = root.downcast_ref::<SortExec>() else {
             return Err(DataFusionError::NotImplemented(
-                "Unable to downcast DataFusion ExecutionPlan to ProjectionExec".to_string(),
+                "Unable to downcast DataFusion ExecutionPlan to SortExec".to_string(),
             ));
         };
 
@@ -96,7 +97,15 @@ fn parse_execution_plan_root(plan: &Arc<dyn ExecutionPlan>) -> Result<EggstrainO
 
         Ok(EggstrainOperator::Sort(node.into_unary()))
     } else if id == TypeId::of::<AggregateExec>() {
-        unimplemented!("Aggregate not implemented");
+        let Some(agg_plan) = root.downcast_ref::<AggregateExec>() else {
+            return Err(DataFusionError::NotImplemented(
+                "Unable to downcast DataFusion ExecutionPlan to AggregateExec".to_string(),
+            ));
+        };
+
+        let node = Aggregate::new(agg_plan);
+
+        Ok(EggstrainOperator::Aggregate(node.into_unary()))
     } else {
         Err(DataFusionError::NotImplemented(
             "Other operators not implemented".to_string(),
@@ -151,7 +160,8 @@ fn setup_unary_operator(
     match node.clone() {
         EggstrainOperator::Project(eggnode)
         | EggstrainOperator::Filter(eggnode)
-        | EggstrainOperator::Sort(eggnode) => {
+        | EggstrainOperator::Sort(eggnode)
+        | EggstrainOperator::Aggregate(eggnode) => {
             let tx = tx.clone();
             tokio::spawn(async move {
                 eggnode.execute(child_rx, tx).await;

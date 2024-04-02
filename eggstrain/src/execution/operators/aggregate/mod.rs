@@ -2,7 +2,6 @@ mod datafusion_aggregate;
 use datafusion_aggregate::*;
 
 mod group_values;
-mod operator;
-use operator::*;
+pub mod operator;
 
 use group_values::*;

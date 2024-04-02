@@ -3,19 +3,15 @@
 use crate::BATCH_SIZE;
 
 use crate::execution::operators::{Operator, UnaryOperator};
-use arrow::array::{ArrayRef, AsArray};
+use arrow::array::AsArray;
 use arrow::compute::concat_batches;
-use arrow::compute::kernels::aggregate;
 use arrow::{datatypes::SchemaRef, record_batch::RecordBatch};
 use async_trait::async_trait;
 use datafusion::logical_expr::EmitTo;
-use datafusion::physical_expr::equivalence::ProjectionMapping;
-use datafusion::physical_expr::{LexOrdering, LexRequirement, PhysicalSortExpr};
 use datafusion::physical_plan::aggregates::{AggregateExec, PhysicalGroupBy};
 use datafusion::physical_plan::ExecutionPlan;
-use datafusion::physical_plan::{AggregateExpr, InputOrderMode, PhysicalExpr};
-use std::io::SeekFrom;
-// use datafusion_common::Result;
+use datafusion::physical_plan::{AggregateExpr, PhysicalExpr};
+use datafusion_common::Result;
 use std::sync::Arc;
 use tokio::sync::broadcast;
 use tokio::sync::broadcast::error::RecvError;
@@ -118,10 +114,7 @@ impl Aggregate {
         let filter_values = evaluate_optional(&filter_expr, &merged_batch).unwrap();
 
         //TODO: maybe this should be input schema not output schema
-        let group_schema = group_schema(
-            &Arc::clone(&output_schema),
-            group_by.clone().expr().len(),
-        );
+        let group_schema = group_schema(&Arc::clone(&output_schema), group_by.clone().expr().len());
 
         let mut group_values_struct = new_group_values(group_schema).unwrap();
 
@@ -131,12 +124,12 @@ impl Aggregate {
             .clone()
             .iter()
             .map(create_group_accumulator)
-            .collect::<Result<_, _>>()
+            .collect::<Result<_>>()
             .unwrap();
 
         for group_values in &group_by_values {
             // calculate the group indices for each input row
-            let starting_num_groups = group_values_struct.len();
+            // let starting_num_groups = group_values_struct.len();
             group_values_struct
                 .intern(group_values, &mut current_group_indices)
                 .unwrap();
@@ -169,7 +162,8 @@ impl Aggregate {
 
         let schema = output_schema.clone();
         if group_values_struct.is_empty() {
-            tx.send(RecordBatch::new_empty(schema));
+            tx.send(RecordBatch::new_empty(schema))
+                .expect("Unable to send empty Record Batch for aggregate");
             return;
         }
 
@@ -227,8 +221,6 @@ impl UnaryOperator for Aggregate {
         }
 
         let merged_batch = concat_batches(&self.input_schema, &batches).unwrap();
-        let limit_size = self.limit_size;
-
 
         let aggregate_expressions = self.aggr_expr.clone();
         let group_by = self.group_by.clone();
@@ -236,6 +228,15 @@ impl UnaryOperator for Aggregate {
         let output_schema = self.output_schema.clone();
 
         //TODO: maybe this *self is a problem
-        rayon::spawn(|| Aggregate::aggregate_sync(aggregate_expressions, group_by, filter_expr, output_schema, merged_batch, tx));
+        rayon::spawn(|| {
+            Aggregate::aggregate_sync(
+                aggregate_expressions,
+                group_by,
+                filter_expr,
+                output_schema,
+                merged_batch,
+                tx,
+            )
+        });
     }
 }

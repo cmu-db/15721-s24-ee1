@@ -1,4 +1,4 @@
-use arrow::array::{downcast_primitive, ArrayRef, RecordBatch};
+use arrow::array::{ArrayRef, RecordBatch};
 use arrow::datatypes::SchemaRef;
 use arrow_schema::Schema;
 use datafusion::common::Result;
@@ -7,8 +7,6 @@ use datafusion::physical_plan::AggregateExpr;
 use datafusion::physical_plan::{aggregates::PhysicalGroupBy, PhysicalExpr};
 use datafusion_expr::GroupsAccumulator;
 use std::sync::Arc;
-
-use super::GroupValues;
 
 /// Evaluates expressions against a record batch.
 pub(crate) fn evaluate(

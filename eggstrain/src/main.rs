@@ -14,7 +14,9 @@ async fn main() -> Result<()> {
 
     // Run our execution engine on the physical plan
     let df_physical_plan = sql.clone().create_physical_plan().await?;
-    let df_physical_plan = df_physical_plan.children()[0].clone();
+    println!("{:#?}", df_physical_plan.clone());
+    // let df_physical_plan = df_physical_plan.children()[0].clone();
+    // let df_physical_plan = df_physical_plan.children()[0].clone();
     let results = run(df_physical_plan).await;
 
     results.into_iter().for_each(|batch| {
