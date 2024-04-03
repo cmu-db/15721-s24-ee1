@@ -1,7 +1,6 @@
 ---
 marp: true
 theme: default
-class: invert # Remove this line for light mode
 paginate: true
 ---
 
