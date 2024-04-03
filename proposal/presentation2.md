@@ -5,7 +5,7 @@ class: invert # Remove this line for light mode
 paginate: true
 ---
 
-# Asynchronous Buffer Pool Manager
+# Eggstrain and Beyond
 
 ## **Authors: Connor, Kyle, Sarvesh**
 
@@ -23,7 +23,9 @@ The main contribution is our asynchronous framework utilizing tokio and rayon th
 
 With this working demo, we have almost completed our initial goal of creating an execution engine with the operators we have previously discussed.
 
-While there is still more work to be done in making the engine more robust and feature-rich, we have laid the groundwork for a powerful and efficient execution engine. However, to fully realize the potential of this engine, we need to implement a buffer pool manager that can keep up with the engine's speed and parallism.
+- More work to be more robust and feature-rich
+- Foundation for a powerful and efficient async execution engine
+- Need new async bpm to support the engine
 
 ---
 
