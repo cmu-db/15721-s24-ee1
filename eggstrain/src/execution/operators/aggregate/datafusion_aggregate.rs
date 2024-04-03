@@ -3,9 +3,11 @@ use arrow::datatypes::SchemaRef;
 use arrow_schema::Schema;
 use datafusion::common::Result;
 use datafusion::physical_expr::GroupsAccumulatorAdapter;
+use datafusion::physical_plan::aggregates::AggregateMode;
+use datafusion::physical_plan::expressions::Column;
 use datafusion::physical_plan::AggregateExpr;
 use datafusion::physical_plan::{aggregates::PhysicalGroupBy, PhysicalExpr};
-use datafusion_expr::GroupsAccumulator;
+use datafusion_expr::{GroupsAccumulator, UserDefinedLogicalNode};
 use std::sync::Arc;
 
 /// Evaluates expressions against a record batch.
@@ -120,4 +122,57 @@ pub(crate) fn create_group_accumulator(
         let factory = move || agg_expr_captured.create_accumulator();
         Ok(Box::new(GroupsAccumulatorAdapter::new(factory)))
     }
+}
+
+pub(crate) fn aggregate_expressions(
+    aggr_expr: &[Arc<dyn AggregateExpr>],
+    mode: &AggregateMode,
+    col_idx_base: usize,
+) -> Result<Vec<Vec<Arc<dyn PhysicalExpr>>>> {
+    match mode {
+        AggregateMode::Partial | AggregateMode::Single | AggregateMode::SinglePartitioned => {
+            Ok(aggr_expr
+                .iter()
+                .map(|agg| {
+                    let mut result = agg.expressions();
+                    // Append ordering requirements to expressions' results. This
+                    // way order sensitive aggregators can satisfy requirement
+                    // themselves.
+                    if let Some(ordering_req) = agg.order_bys() {
+                        result.extend(ordering_req.iter().map(|item| item.expr.clone()));
+                    }
+                    result
+                })
+                .collect())
+        }
+        // In this mode, we build the merge expressions of the aggregation.
+        AggregateMode::Final | AggregateMode::FinalPartitioned => {
+            let mut col_idx_base = col_idx_base;
+            aggr_expr
+                .iter()
+                .map(|agg| {
+                    let exprs = merge_expressions(col_idx_base, agg)?;
+                    col_idx_base += exprs.len();
+                    Ok(exprs)
+                })
+                .collect()
+        }
+    }
+}
+
+/// uses `state_fields` to build a vec of physical column expressions required to merge the
+/// AggregateExpr' accumulator's state.
+///
+/// `index_base` is the starting physical column index for the next expanded state field.
+fn merge_expressions(
+    index_base: usize,
+    expr: &Arc<dyn AggregateExpr>,
+) -> Result<Vec<Arc<dyn PhysicalExpr>>> {
+    expr.state_fields().map(|fields| {
+        fields
+            .iter()
+            .enumerate()
+            .map(|(idx, f)| Arc::new(Column::new(f.name(), index_base + idx)) as _)
+            .collect()
+    })
 }

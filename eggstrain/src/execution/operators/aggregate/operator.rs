@@ -1,6 +1,7 @@
 //! Hash aggregationse crate::BATCH_SIZE;
 
 use crate::BATCH_SIZE;
+use std::any::{Any, TypeId};
 
 use crate::execution::operators::{Operator, UnaryOperator};
 use arrow::array::AsArray;
@@ -8,15 +9,17 @@ use arrow::compute::concat_batches;
 use arrow::{datatypes::SchemaRef, record_batch::RecordBatch};
 use async_trait::async_trait;
 use datafusion::logical_expr::EmitTo;
-use datafusion::physical_plan::aggregates::{AggregateExec, PhysicalGroupBy};
+use datafusion::physical_plan::aggregates::{AggregateExec, AggregateMode, PhysicalGroupBy};
 use datafusion::physical_plan::ExecutionPlan;
 use datafusion::physical_plan::{AggregateExpr, PhysicalExpr};
+use datafusion_common::tree_node::TreeNode;
 use datafusion_common::Result;
 use std::sync::Arc;
 use tokio::sync::broadcast;
 use tokio::sync::broadcast::error::RecvError;
 
 // use std::task::{Context, Poll};
+use arrow_array::Array;
 use std::vec;
 
 use super::*;
@@ -93,22 +96,35 @@ impl Aggregate {
         let group_by_values = evaluate_group_by(&group_by, &merged_batch).unwrap();
 
         let aggr_expr_ref = &aggr_expr;
-        let aggregate_arguments: Vec<Vec<Arc<dyn PhysicalExpr>>> = aggr_expr_ref
-            .iter()
-            .map(|agg| {
-                let mut result = agg.expressions();
-                // Append ordering requirements to expressions' results. This
-                // way order sensitive aggregators can satisfy requirement
-                // themselves.
-                if let Some(ordering_req) = agg.order_bys() {
-                    result.extend(ordering_req.iter().map(|item| item.expr.clone()));
-                }
-                result
-            })
-            .collect();
+        // let aggregate_arguments: Vec<Vec<Arc<dyn PhysicalExpr>>> = aggr_expr_ref
+        //     .iter()
+        //     .map(|agg| {
+        //         let mut result = agg.expressions();
+        //         // Append ordering requirements to expressions' results. This
+        //         // way order sensitive aggregators can satisfy requirement
+        //         // themselves.
+        //         println!("{:#?}", result);
 
+        //         if let Some(ordering_req) = agg.order_bys() {
+        //             result.extend(ordering_req.iter().map(|item| item.expr.clone()));
+        //         }
+        //         result
+        //     })
+        //     .collect();
+
+        //TODO: this should not be mode final
+        let aggregate_arguments =
+            aggregate_expressions(aggr_expr_ref, &AggregateMode::Final, group_by.expr().len()).unwrap();
+
+        let x = aggr_expr_ref[0].name();
+        // let y = aggregate_arguments[0][0].name();
         // Evaluate the aggregation expressions.
+        let batch_schema = merged_batch.schema().to_string();
+        let val1 = merged_batch.columns()[0].data_type().to_string();
+        let val2 = merged_batch.columns()[1].data_type().to_string();
+        println!("{:#?}", merged_batch.columns());
         let input_values = evaluate_many(&aggregate_arguments, &merged_batch).unwrap();
+        println!("{:#?}", input_values);
 
         // Evaluate the filter expressions, if any, against the inputs
         let filter_values = evaluate_optional(&filter_expr, &merged_batch).unwrap();
@@ -129,7 +145,7 @@ impl Aggregate {
 
         for group_values in &group_by_values {
             // calculate the group indices for each input row
-            // let starting_num_groups = group_values_struct.len();
+            let starting_num_groups = group_values_struct.len();
             group_values_struct
                 .intern(group_values, &mut current_group_indices)
                 .unwrap();
@@ -155,6 +171,8 @@ impl Aggregate {
                 let opt_filter = opt_filter.as_ref().map(|filter| filter.as_boolean());
                 // Call the appropriate method on each aggregator with
                 // the entire input row and the relevant group indexes
+                //let name = acc.type_id() == TypeId::of::<SumAccumulator>();
+                let name = values[0].data_type().to_string();
                 acc.update_batch(values, group_indices, opt_filter, total_num_groups)
                     .unwrap();
             }

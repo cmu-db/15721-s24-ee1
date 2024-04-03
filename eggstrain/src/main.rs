@@ -1,4 +1,5 @@
 use arrow::util::pretty;
+use datafusion::sql::sqlparser::ast::Query;
 use datafusion_common::Result;
 use eggstrain::{run, tpch_ctx};
 use std::io;
