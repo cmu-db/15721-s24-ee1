@@ -122,9 +122,9 @@ impl Aggregate {
         let batch_schema = merged_batch.schema().to_string();
         let val1 = merged_batch.columns()[0].data_type().to_string();
         let val2 = merged_batch.columns()[1].data_type().to_string();
-        println!("{:#?}", merged_batch.columns());
+        // println!("{:#?}", merged_batch.columns());
         let input_values = evaluate_many(&aggregate_arguments, &merged_batch).unwrap();
-        println!("{:#?}", input_values);
+        // println!("{:#?}", input_values);
 
         // Evaluate the filter expressions, if any, against the inputs
         let filter_values = evaluate_optional(&filter_expr, &merged_batch).unwrap();
