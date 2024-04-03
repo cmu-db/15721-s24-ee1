@@ -173,7 +173,7 @@ impl Aggregate {
                 // the entire input row and the relevant group indexes
                 //let name = acc.type_id() == TypeId::of::<SumAccumulator>();
                 let name = values[0].data_type().to_string();
-                acc.update_batch(values, group_indices, opt_filter, total_num_groups)
+                acc.merge_batch(values, group_indices, opt_filter, total_num_groups)
                     .unwrap();
             }
         }
