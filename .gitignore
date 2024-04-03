@@ -14,3 +14,5 @@ Cargo.lock
 *.pdb
 
 data/
+data1gb/
+data10gb/
