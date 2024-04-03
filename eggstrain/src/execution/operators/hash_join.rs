@@ -1,9 +1,10 @@
 use super::{BinaryOperator, Operator};
 use crate::execution::record_table::RecordTable;
 use arrow::array::ArrayRef;
-use arrow::datatypes::SchemaRef;
+use arrow::datatypes::{Schema, SchemaRef};
 use arrow::record_batch::RecordBatch;
 use async_trait::async_trait;
+use datafusion::common::arrow::row::{Row, RowConverter, Rows};
 use datafusion::logical_expr::ColumnarValue;
 use datafusion::physical_expr::PhysicalExprRef;
 use datafusion::physical_plan::ExecutionPlan;
@@ -118,7 +119,6 @@ impl HashJoin {
         // let output_columns = left_column_count + right_column_count - self.equate_on.len();
 
         let right_rows = table.buffer.record_batch_to_rows(right_batch)?;
-
         for (row, &hash) in hashes.iter().enumerate() {
             // For each of these hashes, check if it is in the table
             let Some(records) = table.get_record_indices(hash) else {
@@ -127,19 +127,26 @@ impl HashJoin {
             assert!(!records.is_empty());
 
             // TODO
-            todo!("create a new RowConverter with the joined schema");
 
+            // Create a new schema that is the join of the two schemas
+            let left_schema: Schema = (*self.left_schema).clone();
+            let right_schema: Schema = (*self.right_schema).clone();
+
+            let new_schema = Schema::try_merge(vec![left_schema, right_schema])?;
+            let joined_schema: SchemaRef = Arc::new(new_schema);
+
+            let row_converter = RowConverter::new(new_schema);
             // There are records associated with this hash value, so we need to emit things
             for &record in records {
                 let left_tuple = table.buffer.get(record).unwrap();
-                let right_tuple = right_rows.row(row);
+                let right_tuple: Row = right_rows.row(row);
+
+                let joined_tuple = todo!("Join the two tuples in some way");
 
                 todo!("Join the two tuples in some way, then append to a `Rows`")
             }
-
-            let out_columns: Vec<ArrayRef> = todo!(
-                "Convert the `Rows` back into a `RecordBatch` with `RowConverter::convert_rows`"
-            );
+            todo!("Convert the `Rows` back into a `RecordBatch` with `RowConverter::convert_rows`");
+            let out_columns: Vec<ArrayRef> = RowConverter::convert_rows(joined_schema, rows)?;
 
             todo!("Figure out names for each column");
 
