@@ -1,7 +1,7 @@
 ---
 marp: true
 theme: default
-class: invert # Remove this line for light mode
+#class: invert # Remove this line for light mode
 paginate: true
 ---
 
@@ -21,6 +21,17 @@ Asynchronous Buffer Pool Manager
 - 75%: First 7 operators working + integration with other components
 - 100%: All operators listed above working
 - 125%: TPC-H benchmark working
+
+---
+
+# Design Goals
+
+- Robustness
+- Modularity
+- Extensibility
+- Forward Compatibility
+
+We made heavy use of `tokio` and `rayon` in our implementation.
 
 --- 
 
@@ -84,9 +95,20 @@ However, we lack unit tests for each operator. We instead tested operators integ
 ---
 
 
-# Benchmarks
+# BPM Benchmarks
 
-TODO 
+Hardware:
+- Cray/Appro GB512X - 32 Threads Xeon E5-2670 @ 2.60GHz, 64 GiB DDR3 RAM, 1x 240GB SSD, Gigabit Ethernet, QLogic QDR Infiniband
+
+We will benchmark against RocksDB as a buffer pool manager.
+
+---
+
+![bg 90%](./images/20w80r.png)
+
+---
+
+![bg 90%](./images/80w20r.png)
 
 ---
 
