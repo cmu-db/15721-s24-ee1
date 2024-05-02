@@ -205,7 +205,8 @@ The goal of this system is to _fully exploit parallelism_.
 *   NVMe drives have gotten really, really fast
 *   Blocking I/O simply cannot match the full throughput of an NVMe drive
 *   They are _completely_ bottle-necked by today's software
-*   If we can fully exploit parallelism in software _and_ hardware, we can get close to matching the speed of in-memory systems, while using persistent storage
+*   If we can fully exploit parallelism in software _and_ hardware...
+    * **We can actually get close to matching the speed of in-memory systems, _while using persistent storage_**
 
 ---
 
@@ -217,12 +218,12 @@ The goal of this system is to _fully exploit parallelism_.
 
 The next slide has a proposed design for a fully asynchronous buffer pool manager. The full (somewhat incomplete) writeup can be found [here](https://github.com/Connortsui20/async-bpm).
 
-*   Heavily inspired by LeanStore
-    *   Eliminates the global page table and uses tagged pointers to data
-*   Even more inspired by this paper:
-    *   _What Modern NVMe Storage Can Do, And How To Exploit It: High-Performance I/O for High-Performance Storage Engines (2023)_
-        *   Gabriel Haas and Viktor Leis
-*   The goal is to _eliminate as many sources of global contention as possible_
+-   Heavily inspired by LeanStore
+    -   Eliminates the global page table and uses tagged pointers to data
+-   Even more inspired by this paper:
+    -   _What Modern NVMe Storage Can Do, And How To Exploit It: High-Performance I/O for High-Performance Storage Engines (2023)_
+        -   Gabriel Haas and Viktor Leis
+-   The goal is to _eliminate as many sources of global contention as possible_
 
 ---
 
@@ -235,8 +236,7 @@ The next slide has a proposed design for a fully asynchronous buffer pool manage
 Hardware:
 
 * Cray/Appro GB512X - 32 Threads Xeon E5-2670 @ 2.60GHz, 64 GiB DDR3 RAM, 1x 240GB SSD, Gigabit Ethernet, QLogic QDR Infiniband
-
-* We will benchmark against RocksDB as a buffer pool manager.
+* We will benchmark against RocksDB as a buffer pool manager
 
 ---
 
