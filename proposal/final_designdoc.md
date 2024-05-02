@@ -1,9 +1,8 @@
 # Execution Engine
 
-* Sarvesh (sarvesht)
-* Kyle (kbooker)
-* Connor (cjtsui)
-
+-   Sarvesh (sarvesht)
+-   Kyle (kbooker)
+-   Connor (cjtsui)
 
 # Overview
 
@@ -15,9 +14,8 @@ There were two subgoals. The first is to develop a functional EE, with a suffici
 
 The second was to add either interesting features or optimize the engine to be more performant (or both). Since it is unlikely that we will outperform any off-the-shelf EEs like DataFusion, we will likely try to test some new feature that these engines do not use themselves.
 
-
-
 # Architectural Design
+
 > Explain the input and output of the component, describe interactions and breakdown the smaller components if any. Include diagrams if appropriate.
 
 We created a vectorized push-based EE. This means operators will push batches of data up to their parent operators in the physical plan tree.
@@ -27,13 +25,14 @@ We created a vectorized push-based EE. This means operators will push batches of
 ### Operators
 
 We implemented a subset of the operators that [Velox implements](https://facebookincubator.github.io/velox/develop/operators.html):
-- TableScan (Used Datafusion)
-- Filter (Completed)
-- Project (Completed)
-- HashAggregation (Completed)
-- HashProbe + HashBuild (Used Datafusion)
-- OrderBy (Completed)
-- TopN (Completed)
+
+-   TableScan (Used Datafusion)
+-   Filter (Completed)
+-   Project (Completed)
+-   HashAggregation (Completed)
+-   HashProbe + HashBuild (Used Datafusion)
+-   OrderBy (Completed)
+-   TopN (Completed)
 
 The `trait` / interface to define these operators is unknown right now. We will likely follow whatever DataFusion is outputting from their [`ExecutionPlan::execute()`](https://docs.rs/datafusion/latest/datafusion/physical_plan/trait.ExecutionPlan.html#tymethod.execute) methods.
 
@@ -78,11 +77,12 @@ The buffer pool manager in Datafusion was not asynchronous. So in order to fully
 # Testing Plan For In-Memory Execution Engine
 
 > How should the component be tested?
-The integration test were TPC-H, or something similar to TPC-H. This was a stretch goal. We have completed this and the results of running TPC-H query 1 with scale factor=10 are shown in the final presentation.
+> The integration test were TPC-H, or something similar to TPC-H. This was a stretch goal. We have completed this and the results of running TPC-H query 1 with scale factor=10 are shown in the final presentation.
 
 # Glossary
 
 > If you are introducing new concepts or giving unintuitive names to components, write them down here.
+
 -   "Vectorized execution" is the name given to the concept of outputting batches of data. But since there is a `Vec`tor type in Rust, we'll likely be calling everything Batches instead of Vectors.
 
 ---
@@ -238,8 +238,9 @@ It will aim to have some certain threshold of free pages in the free list.
         -   Set Px to `Unloaded`
         -   Send Px's frame to the global channel of free frames
         -   Unlock Px
-    
+
 # Glossary
+
 > If you are introducing new concepts or giving unintuitive names to components, write them down here.
 
-- "Vectorized execution" is the name given to the concept of outputting batches of data. But since there is a `Vec`tor type in Rust, we'll likely be calling everything Batches instead of Vectors.
+-   "Vectorized execution" is the name given to the concept of outputting batches of data. But since there is a `Vec`tor type in Rust, we'll likely be calling everything Batches instead of Vectors.
