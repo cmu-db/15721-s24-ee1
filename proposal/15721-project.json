@@ -1,0 +1,21 @@
+{
+    "info": {
+        "title": "Eggstrain & Async Buffer Pool Manager",
+        "github": "https://github.com/cmu-db/15721-s24-ee1",
+        "description": "An asynchronous vectorized push-based execution and asynchronous buffer pool manager written in Rust.",
+        "students": [
+            {
+                "name": "Kyle Booker",
+                "url": "https://www.linkedin.com/in/ktbooker/"
+            },
+            {
+                "name": "Sarvesh Tandon",
+                "url": "https://www.linkedin.com/in/sarvesh-tandon/"
+            },
+            {
+                "name": "Connor Tsui",
+                "url": "https://www.linkedin.com/in/connortsui/"
+            }
+        ]
+    }
+}
