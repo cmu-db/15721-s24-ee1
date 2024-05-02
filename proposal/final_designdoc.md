@@ -5,39 +5,35 @@
 * Connor (cjtsui)
 
 
-
 # Overview
-> What is the goal of this project? What will this component achieve?
 
-The purpose of this project is to create the Execution Engine (EE) for a distributed OLAP database.
+The purpose of this project was to create the Execution Engine (EE) for a distributed OLAP database.
 
-We will be taking heavy inspiration from [DataFusion](https://arrow.apache.org/datafusion/), [Velox](https://velox-lib.io/), and [InfluxDB](https://github.com/influxdata/influxdb) (which itself is built on top of DataFusion).
+We took heavy inspiration from [DataFusion](https://arrow.apache.org/datafusion/), [Velox](https://velox-lib.io/), and [InfluxDB](https://github.com/influxdata/influxdb) (which itself is built on top of DataFusion).
 
-There are two subgoals. The first is to develop a functional EE, with a sufficient number of operators working and tested. Since all other components will have to rely on us to see any sort of outputs, it would be ideal if we had naive implementations of operators that just work (even if they are inefficient).
+There were two subgoals. The first is to develop a functional EE, with a sufficient number of operators working and tested. Since all other components have to rely on us to see any sort of outputs, we had have implementations of operators that just work (even though some are inefficient).
 
-The second is to add either interesting features or optimize the engine to be more performant (or both). Since it is unlikely that we will outperform any off-the-shelf EEs like DataFusion, we will likely try to test some new feature that these engines do not use themselves.
+The second was to add either interesting features or optimize the engine to be more performant (or both). Since it is unlikely that we will outperform any off-the-shelf EEs like DataFusion, we will likely try to test some new feature that these engines do not use themselves.
 
 
 
 # Architectural Design
 > Explain the input and output of the component, describe interactions and breakdown the smaller components if any. Include diagrams if appropriate.
 
-We will be creating a vectorized push-based EE. This means operators will push batches of data up to their parent operators in the physical plan tree.
+We created a vectorized push-based EE. This means operators will push batches of data up to their parent operators in the physical plan tree.
 
 ---
 
 ### Operators
 
-We will implement a subset of the operators that [Velox implements](https://facebookincubator.github.io/velox/develop/operators.html):
-- TableScan
+We implemented a subset of the operators that [Velox implements](https://facebookincubator.github.io/velox/develop/operators.html):
+- TableScan (Used Datafusion)
 - Filter (Completed)
 - Project (Completed)
-- HashAggregation (In-progress)
-- HashProbe + HashBuild (In-progress)
-- MergeJoin
+- HashAggregation (Completed)
+- HashProbe + HashBuild (Used Datafusion)
 - OrderBy (Completed)
 - TopN (Completed)
-- Exchange
 
 The `trait` / interface to define these operators is unknown right now. We will likely follow whatever DataFusion is outputting from their [`ExecutionPlan::execute()`](https://docs.rs/datafusion/latest/datafusion/physical_plan/trait.ExecutionPlan.html#tymethod.execute) methods.
 
@@ -75,24 +71,17 @@ The IO Service will retrieve the data (presumably by talking with the Catalog) f
 
 For our group, data between operators will also be sent and processed through Apache Arrow `RecordBatch` types. This is not how Velox does it, but it is how DataFusion does processing.
 
-It is likely that we also needed our own Buffer Pool Manager to manage in-memory data that needs to be spilled to disk in the case that the amount of data we need to handle grows too much. 
+It is likely that we also needed our own Buffer Pool Manager to manage in-memory data that needs to be spilled to disk in the case that the amount of data we need to handle grows too much.
 
+The buffer pool manager in Datafusion was not asynchronous. So in order to fully exploit the advantages of the tokio asynchronous runtime, we shifted focus completely in the last 4 weeks to build out an asynchronous buffer pool manager similar to Leanstore.
 
-
-
-
-
-# Testing Plan
+# Testing Plan For In-Memory Execution Engine
 > How should the component be tested?
 
-We will add unit testing and documentation testing to every function. Since it is quite difficult to create undefined behavior in Rust, testing will focus on logical correctness and performance.
-
-The integration test will be TPC-H, or something similar to TPC-H. This is a stretch goal. We have completed this and the results of running TPC-H query 1 with scale factor=10 are shown in the final presentation.
+The integration test were TPC-H, or something similar to TPC-H. This was a stretch goal. We have completed this and the results of running TPC-H query 1 with scale factor=10 are shown in the final presentation.
 
 
-
-
-# Design
+# Asynchrnous Buffer Pool Manager Design
 
 This model is aimed at a thread-per-core model with a single logical disk.
 This implies that tasks (coroutines) given to worker threads cannot be moved between threads
@@ -199,7 +188,8 @@ and the page eviction state will be `Hot`.
 
 -   If the page is `Loaded`, then immediately return
 -   Otherwise, this page is `Unloaded`
--   `await` a free frame from the global channel of frames
+-   pick a random `FrameGroup` from the set of frame groups that we have
+-   run the cooling (clock) algorithm on all the frames in the `FrameGroup` until we have a free frame available
 -   Set the frame's parent pointer to P1
 -   Read P1's data from disk into the buffer
 -   `await` read completion from the local `io_uring` instance
@@ -207,15 +197,15 @@ and the page eviction state will be `Hot`.
 
 ### General Eviction Algorithm
 
-On every worker thread, there should be at least 1 "background" task
-(not scheduled by the global scheduler) dedicated to evicting pages.
+On every worker thread, if the random `FrameGroup` that it picks does not have a frame,
+it will start acting like an evictor and will start running the clock algorithm.
 It will aim to have some certain threshold of free pages in the free list.
 
--   Iterate over all frames
+-   Iterate over all frames in the `FrameGroup`
 -   Collect the list of `Page`s that are `Loaded` (should not be more than the number of frames)
 -   For every `Page` that is `Hot`, change to `Cool`
 -   Collect all `Cool` pages
--   Randomly choose some (small) constant number of pages from the list of initially `Cool` pages
+-   Randomly choose some (small) constant number of pages (current this constant number is 1 but in the future we would like it to be 64 i.e. do 64 eviction flushes together) from the list of initially `Cool` pages
 -   `join!` the following page eviction futures:
     -   For each page Px we want to evict:
         -   Check if Px has been changed to `Hot`, and if so, return early
