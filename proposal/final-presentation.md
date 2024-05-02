@@ -7,7 +7,7 @@ paginate: true
 
 # Eggstrain
 
-Vectorized Push-Based inpired Execution Engine
+Vectorized Push-Based inspired Execution Engine
 Asynchronous Buffer Pool Manager
 
 <br>
@@ -88,9 +88,12 @@ However, we lack unit tests for each operator. We instead tested operators integ
 
 ---
 
-# Problem: In Memory? We need a buffer pool!
+# Problem: In Memory?
 
-We found that we needed to spill data to disk to handle large queries. However, to take advantage of our asynchronous architecture, we needed to implement an asynchronous buffer pool manager.
+We found that we needed to spill data to disk to handle large queries.
+
+However, to take advantage of our asynchronous architecture, we needed to implement an **asynchronous buffer pool manager.**
+
 
 ---
 
@@ -177,9 +180,9 @@ This Buffer Pool Manager is going to be built with asynchronous I/O using `io_ur
 
 Asynchronous I/O really only works when the programs running on top of it implement _cooperative multitasking_.
 
-*   At a high level, the kernel gets to decide what thread gets to run
+*   Normally, the kernel gets to decide what thread gets to run
 *   Cooperative multitasking allows the program to decide who gets to run
-*   Context switching between tasks is a lightweight maneuver
+*   Context switching between tasks is a _much more_ lightweight maneuver
 *   If one task is waiting for I/O, we can cheaply switch to a different task!
 
 ---
@@ -206,6 +209,10 @@ The goal of this system is to _fully exploit parallelism_.
 
 ---
 
+![bg 60%](images/modern_storage.png)
+
+---
+
 # Proposed Design
 
 The next slide has a proposed design for a fully asynchronous buffer pool manager. The full (somewhat incomplete) writeup can be found [here](https://github.com/Connortsui20/async-bpm).
@@ -219,7 +226,7 @@ The next slide has a proposed design for a fully asynchronous buffer pool manage
 
 ---
 
-![bg 100%](images/bpm_design.png)
+![bg 90%](images/bpm_design.png)
 
 ---
 
@@ -227,9 +234,9 @@ The next slide has a proposed design for a fully asynchronous buffer pool manage
 
 Hardware:
 
--   Cray/Appro GB512X - 32 Threads Xeon E5-2670 @ 2.60GHz, 64 GiB DDR3 RAM, 1x 240GB SSD, Gigabit Ethernet, QLogic QDR Infiniband
+* Cray/Appro GB512X - 32 Threads Xeon E5-2670 @ 2.60GHz, 64 GiB DDR3 RAM, 1x 240GB SSD, Gigabit Ethernet, QLogic QDR Infiniband
 
-We will benchmark against RocksDB as a buffer pool manager.
+* We will benchmark against RocksDB as a buffer pool manager.
 
 ---
 
@@ -275,8 +282,8 @@ zipfian distribution, alpha = 1.2 -->
 
 # Future Work
 
+-   Asynchronous BPM ergonomics and API
 -   Proper `io_uring` polling and batch evictions
--   Shared user/kernel buffers (avoiding `memcpy`)
--   Shared file descriptors
--   Multiple NVMe SSD support (Software Raid 0 Implementation)
+-   Shared user/kernel buffers and file descriptors (avoiding `memcpy`)
+-   Multiple NVMe SSD support (Software-implemented RAID 0)
 -   Optimistic hybrid latches
