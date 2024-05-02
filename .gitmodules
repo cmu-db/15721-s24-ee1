@@ -2,3 +2,8 @@
 	path = async-bpm
 	url = git@github.com:Connortsui20/async-bpm.git
 	branch = main
+[submodule "benchmark"]
+	path = benchmark 
+	url = git@github.com:SarveshOO7/rocksdb_bench.git
+	branch = main
+ 
