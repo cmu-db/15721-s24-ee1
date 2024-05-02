@@ -255,11 +255,11 @@ zipfian distribution, alpha = 1.01 -->
 
 ---
 
-![bg 90%](./images/uniform80w20r.png)
+![bg 90%](./images/uniform20w80r.png)
 
 ---
 
-![bg 90%](./images/uniform20w80r.png)
+![bg 90%](./images/uniform80w20r.png)
 
 ---
 
