@@ -72,15 +72,12 @@ We made heavy use of `tokio` and `rayon` in our implementation.
 # Execution Engine Benchmarks
 
 Hardware:
-- Cray/Appro GB512X - 32 Threads Xeon E5-2670 @ 2.60GHz, 64 GiB DDR3 RAM, 1x 240GB SSD, Gigabit Ethernet, QLogic QDR Infiniband
-
-TODO
+- M1 Pro, 8 cores, 16GB RAM
 
 ---
 
-# Problem: In Memory? We need a buffer pool!
+![bg 90%](./images/csvreader.png)
 
-We found that we needed to spill data to disk to handle large queries. However, to take advantage of our asynchronous architecture, we needed to implement an asynchronous buffer pool manager.
 
 ---
 
@@ -94,6 +91,13 @@ However, we lack unit tests for each operator. We instead tested operators integ
 
 ---
 
+# Problem: In Memory? We need a buffer pool!
+
+We found that we needed to spill data to disk to handle large queries. However, to take advantage of our asynchronous architecture, we needed to implement an asynchronous buffer pool manager.
+
+---
+
+
 
 # BPM Benchmarks
 
@@ -104,6 +108,10 @@ We will benchmark against RocksDB as a buffer pool manager.
 
 ---
 
+![bg 90%](./images/zip1.1dist.png)
+
+---
+
 ![bg 90%](./images/20w80r.png)
 <!-- 
 zipfian distribution, alpha = 1.01 -->
@@ -111,6 +119,18 @@ zipfian distribution, alpha = 1.01 -->
 ---
 
 ![bg 90%](./images/80w20r.png)
+
+---
+
+![bg 90%](./images/uniform80w20r.png)
+
+--- 
+
+![bg 90%](./images/uniform20w80r.png)
+
+---
+
+![bg 90%](./images/uniform5050.png)
 
 <!-- zipfian distribution, alpha = 1.01 -->
 
@@ -129,7 +149,9 @@ zipfian distribution, alpha = 1.2 -->
 
 # Future Work
 
-TODO 
+- Batch Evictions
+- Hybrid Latches
+- Multiple SSD Support
 
 ---
 
