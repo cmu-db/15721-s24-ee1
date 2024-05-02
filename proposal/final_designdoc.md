@@ -1,11 +1,12 @@
 # Execution Engine
 
-* Sarvesh (sarvesht)
-* Kyle (kbooker)
-* Connor (cjtsui)
-
+-   Sarvesh (sarvesht)
+-   Kyle (kbooker)
+-   Connor (cjtsui)
 
 # Overview
+
+> What is the goal of this project? What will this component achieve?
 
 The purpose of this project was to create the Execution Engine (EE) for a distributed OLAP database.
 
@@ -15,9 +16,8 @@ There were two subgoals. The first is to develop a functional EE, with a suffici
 
 The second was to add either interesting features or optimize the engine to be more performant (or both). Since it is unlikely that we will outperform any off-the-shelf EEs like DataFusion, we will likely try to test some new feature that these engines do not use themselves.
 
-
-
 # Architectural Design
+
 > Explain the input and output of the component, describe interactions and breakdown the smaller components if any. Include diagrams if appropriate.
 
 We created a vectorized push-based EE. This means operators will push batches of data up to their parent operators in the physical plan tree.
@@ -26,14 +26,17 @@ We created a vectorized push-based EE. This means operators will push batches of
 
 ### Operators
 
-We implemented a subset of the operators that [Velox implements](https://facebookincubator.github.io/velox/develop/operators.html):
-- TableScan (Used Datafusion)
-- Filter (Completed)
-- Project (Completed)
-- HashAggregation (Completed)
-- HashProbe + HashBuild (Used Datafusion)
-- OrderBy (Completed)
-- TopN (Completed)
+We will implement a subset of the operators that [Velox implements](https://facebookincubator.github.io/velox/develop/operators.html):
+
+-   TableScan
+-   Filter (Completed)
+-   Project (Completed)
+-   HashAggregation (In-progress)
+-   HashProbe + HashBuild (In-progress)
+-   MergeJoin
+-   OrderBy (Completed)
+-   TopN (Completed)
+-   Exchange
 
 The `trait` / interface to define these operators is unknown right now. We will likely follow whatever DataFusion is outputting from their [`ExecutionPlan::execute()`](https://docs.rs/datafusion/latest/datafusion/physical_plan/trait.ExecutionPlan.html#tymethod.execute) methods.
 
@@ -76,12 +79,39 @@ It is likely that we also needed our own Buffer Pool Manager to manage in-memory
 The buffer pool manager in Datafusion was not asynchronous. So in order to fully exploit the advantages of the tokio asynchronous runtime, we shifted focus completely in the last 4 weeks to build out an asynchronous buffer pool manager similar to Leanstore.
 
 # Testing Plan For In-Memory Execution Engine
+
 > How should the component be tested?
 
 The integration test were TPC-H, or something similar to TPC-H. This was a stretch goal. We have completed this and the results of running TPC-H query 1 with scale factor=10 are shown in the final presentation.
 
+# Glossary
 
-# Asynchrnous Buffer Pool Manager Design
+> If you are introducing new concepts or giving unintuitive names to components, write them down here.
+
+-   "Vectorized execution" is the name given to the concept of outputting batches of data. But since there is a `Vec`tor type in Rust, we'll likely be calling everything Batches instead of Vectors.
+
+---
+
+<br>
+<br>
+<br>
+<br>
+
+# **Asynchronous Buffer Pool**
+
+_Note: This design documentation for the asynchronous buffer pool is slightly outdated, but the_
+_high-level components are still the same. The only real difference is in the eviction algorithm._
+
+For the real documentation, see the up-to-date repository
+[here](https://github.com/Connortsui20/async-bpm).
+
+After cloning the repository, run this command to generate the documentation:
+
+```sh
+$ cargo doc --document-private-items --open
+```
+
+# Design
 
 This model is aimed at a thread-per-core model with a single logical disk.
 This implies that tasks (coroutines) given to worker threads cannot be moved between threads
@@ -101,6 +131,17 @@ Finally, this is heavily inspired by
 [this Leanstore paper](https://www.vldb.org/pvldb/vol16/p2090-haas.pdf),
 and future work could introduce the all-to-all model of threads to distinct SSDs,
 where each worker thread has a dedicated `io_uring` instance for every physical SSD.
+
+# Future Work
+
+There is still a lot of work to be done on this system. As of right now, it is in a state of
+"barely working". However, in this "barely working" state, it still matches and even outperforms
+RocksDB in IOPS on single-disk hardware. Even though this is not a very high bare, it shows the high
+potential of this system, especially since the goal is to scale with better hardware.
+
+Almost all of the [issues](https://github.com/Connortsui20/async-bpm/issues) are geared towards
+optimization, and it is not an overstatement to say that each of these features would contribute
+to a significant performance gain.
 
 # Objects and Types
 
@@ -216,8 +257,3 @@ It will aim to have some certain threshold of free pages in the free list.
         -   Set Px to `Unloaded`
         -   Send Px's frame to the global channel of free frames
         -   Unlock Px
-    
-# Glossary
-> If you are introducing new concepts or giving unintuitive names to components, write them down here.
-
-- "Vectorized execution" is the name given to the concept of outputting batches of data. But since there is a `Vec`tor type in Rust, we'll likely be calling everything Batches instead of Vectors.
