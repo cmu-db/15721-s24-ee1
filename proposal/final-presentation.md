@@ -105,10 +105,25 @@ We will benchmark against RocksDB as a buffer pool manager.
 ---
 
 ![bg 90%](./images/20w80r.png)
+<!-- 
+zipfian distribution, alpha = 1.01 -->
 
 ---
 
 ![bg 90%](./images/80w20r.png)
+
+<!-- zipfian distribution, alpha = 1.01 -->
+
+<!-- ---
+
+![bg 90%](./images/zip1.1.png)
+
+zipfian distribution, alpha = 1.1 -->
+
+<!-- ---
+
+![bg 90%](./images/zip1.2.png)
+zipfian distribution, alpha = 1.2 -->
 
 ---
 
