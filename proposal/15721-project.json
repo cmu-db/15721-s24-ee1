@@ -2,7 +2,7 @@
     "info": {
         "title": "Eggstrain & Async Buffer Pool Manager",
         "github": "https://github.com/cmu-db/15721-s24-ee1",
-        "description": "An asynchronous vectorized push-based execution and asynchronous buffer pool manager written in Rust.",
+        "description": "This project is a combination of two systems written in Rust: an asynchronous vectorized push-based execution called Eggstrain and an asynchronous buffer pool manager built on top of io_uring. Eggstrain is based heavily on DataFusion, an open-source query engine written in Rust. Eggstrain re-implements a subset of DataFusion's operators to use lightweight tasks (similar to coroutines) for I/O and dataflow, switching to heavyweight OS threads for compute-heavy workloads. By relying on the 3rd-party crates tokio and rayon, which implement a high-performance work-stealing asynchronous runtime and a parallel thread pool respectively, we are able to match the in-memory speed of DataFusion. However, an asynchronous execution engine loses its value if the storage / buffer pool manager is synchronous / blocking. Thus the second part of this project is building an asynchronous buffer pool manager. The manager is built on top of io_uring, a modern linux interface for asynchronous I/O operation. Even though the system has zero optimizations, it still outperforms RocksDB by around 2x-5x depending on the workload.",
         "students": [
             {
                 "name": "Kyle Booker",
