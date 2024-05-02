@@ -76,31 +76,53 @@ It is likely that we also needed our own Buffer Pool Manager to manage in-memory
 The buffer pool manager in Datafusion was not asynchronous. So in order to fully exploit the advantages of the tokio asynchronous runtime, we shifted focus completely in the last 4 weeks to build out an asynchronous buffer pool manager similar to Leanstore.
 
 # Testing Plan For In-Memory Execution Engine
-> How should the component be tested?
 
+> How should the component be tested?
 The integration test were TPC-H, or something similar to TPC-H. This was a stretch goal. We have completed this and the results of running TPC-H query 1 with scale factor=10 are shown in the final presentation.
 
+# Glossary
 
-# Asynchrnous Buffer Pool Manager Design
+> If you are introducing new concepts or giving unintuitive names to components, write them down here.
+-   "Vectorized execution" is the name given to the concept of outputting batches of data. But since there is a `Vec`tor type in Rust, we'll likely be calling everything Batches instead of Vectors.
+
+---
+
+<br>
+<br>
+<br>
+<br>
+
+# **Asynchronous Buffer Pool**
+
+_Note: This design documentation for the asynchronous buffer pool is slightly outdated, but the_
+_high-level components are still the same. The only real difference is in the eviction algorithm._
+
+For the real documentation, see the up-to-date repository
+[here](https://github.com/Connortsui20/async-bpm).
+
+After cloning the repository, run this command to generate the documentation:
+
+```sh
+$ cargo doc --document-private-items --open
+```
+
+# Design
 
 This model is aimed at a thread-per-core model with a single logical disk.
 This implies that tasks (coroutines) given to worker threads cannot be moved between threads
-(or in other words, are `!Send`).
-So it is on a global scheduler to assign tasks to worker threads appropriately.
-Once a task has been given to a worker thread, then the asynchronous runtime's
-scheduler is in charge of managing the cooperative tasks.
-
-An implication of the above is that this model will not work with
-`tokio`'s work-stealing multi-threaded runtime.
-However, the benefits of parallelism in this model at the cost of
-having to manually manage load balancing is likely worth it.
-Additionally, a DBMS that could theoretically use this model would likely have
-better knowledge of how to schedule things appropriately.
-
-Finally, this is heavily inspired by
-[this Leanstore paper](https://www.vldb.org/pvldb/vol16/p2090-haas.pdf),
 and future work could introduce the all-to-all model of threads to distinct SSDs,
 where each worker thread has a dedicated `io_uring` instance for every physical SSD.
+
+# Future Work
+
+There is still a lot of work to be done on this system. As of right now, it is in a state of
+"barely working". However, in this "barely working" state, it still matches and even outperforms
+RocksDB in IOPS on single-disk hardware. Even though this is not a very high bare, it shows the high
+potential of this system, especially since the goal is to scale with better hardware.
+
+Almost all of the [issues](https://github.com/Connortsui20/async-bpm/issues) are geared towards
+optimization, and it is not an overstatement to say that each of these features would contribute
+to a significant performance gain.
 
 # Objects and Types
 
